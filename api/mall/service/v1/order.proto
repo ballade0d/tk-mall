@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package api.mall.service.v1;
+
+option go_package = "mall/api/mall/service/v1";
+
+service OrderService {
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {}
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {}
+}
+
+message GetOrderRequest {
+  int32 id = 1;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+}
+
+message CreateOrderRequest {
+  int32 user_id = 1;
+  string address = 2;
+  repeated OrderItem items = 3;
+}
+
+message CreateOrderResponse {
+  Order order = 1;
+}
+
+message Order {
+  int32 id = 1;
+  int32 user_id = 2;
+  string status = 3;
+  string address = 4;
+  repeated OrderItem items = 5;
+}
+
+message OrderItem {
+  int32 id = 1;
+  int32 product_id = 2;
+  int32 quantity = 3;
+}

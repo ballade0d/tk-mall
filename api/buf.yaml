@@ -1,0 +1,15 @@
+version: v2
+
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+
+modules:
+  - path: mall
+    name: buf.build/tiktok/mall
+
+deps:
+  - buf.build/googleapis/googleapis
