@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"mall/ent/password"
 	"mall/ent/predicate"
+	"mall/ent/user"
 	"math"
 
 	"entgo.io/ent"
@@ -22,6 +23,7 @@ type PasswordQuery struct {
 	order      []password.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Password
+	withUser   *UserQuery
 	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -59,6 +61,28 @@ func (pq *PasswordQuery) Order(o ...password.OrderOption) *PasswordQuery {
 	return pq
 }
 
+// QueryUser chains the current query on the "user" edge.
+func (pq *PasswordQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(password.Table, password.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, password.UserTable, password.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first Password entity from the query.
 // Returns a *NotFoundError when no Password was found.
 func (pq *PasswordQuery) First(ctx context.Context) (*Password, error) {
@@ -83,8 +107,8 @@ func (pq *PasswordQuery) FirstX(ctx context.Context) *Password {
 
 // FirstID returns the first Password ID from the query.
 // Returns a *NotFoundError when no Password ID was found.
-func (pq *PasswordQuery) FirstID(ctx context.Context) (id int32, err error) {
-	var ids []int32
+func (pq *PasswordQuery) FirstID(ctx context.Context) (id int, err error) {
+	var ids []int
 	if ids, err = pq.Limit(1).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -96,7 +120,7 @@ func (pq *PasswordQuery) FirstID(ctx context.Context) (id int32, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pq *PasswordQuery) FirstIDX(ctx context.Context) int32 {
+func (pq *PasswordQuery) FirstIDX(ctx context.Context) int {
 	id, err := pq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -134,8 +158,8 @@ func (pq *PasswordQuery) OnlyX(ctx context.Context) *Password {
 // OnlyID is like Only, but returns the only Password ID in the query.
 // Returns a *NotSingularError when more than one Password ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pq *PasswordQuery) OnlyID(ctx context.Context) (id int32, err error) {
-	var ids []int32
+func (pq *PasswordQuery) OnlyID(ctx context.Context) (id int, err error) {
+	var ids []int
 	if ids, err = pq.Limit(2).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -151,7 +175,7 @@ func (pq *PasswordQuery) OnlyID(ctx context.Context) (id int32, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pq *PasswordQuery) OnlyIDX(ctx context.Context) int32 {
+func (pq *PasswordQuery) OnlyIDX(ctx context.Context) int {
 	id, err := pq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -179,7 +203,7 @@ func (pq *PasswordQuery) AllX(ctx context.Context) []*Password {
 }
 
 // IDs executes the query and returns a list of Password IDs.
-func (pq *PasswordQuery) IDs(ctx context.Context) (ids []int32, err error) {
+func (pq *PasswordQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if pq.ctx.Unique == nil && pq.path != nil {
 		pq.Unique(true)
 	}
@@ -191,7 +215,7 @@ func (pq *PasswordQuery) IDs(ctx context.Context) (ids []int32, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pq *PasswordQuery) IDsX(ctx context.Context) []int32 {
+func (pq *PasswordQuery) IDsX(ctx context.Context) []int {
 	ids, err := pq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -251,10 +275,22 @@ func (pq *PasswordQuery) Clone() *PasswordQuery {
 		order:      append([]password.OrderOption{}, pq.order...),
 		inters:     append([]Interceptor{}, pq.inters...),
 		predicates: append([]predicate.Password{}, pq.predicates...),
+		withUser:   pq.withUser.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
 	}
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PasswordQuery) WithUser(opts ...func(*UserQuery)) *PasswordQuery {
+	query := (&UserClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withUser = query
+	return pq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -333,10 +369,16 @@ func (pq *PasswordQuery) prepareQuery(ctx context.Context) error {
 
 func (pq *PasswordQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Password, error) {
 	var (
-		nodes   = []*Password{}
-		withFKs = pq.withFKs
-		_spec   = pq.querySpec()
+		nodes       = []*Password{}
+		withFKs     = pq.withFKs
+		_spec       = pq.querySpec()
+		loadedTypes = [1]bool{
+			pq.withUser != nil,
+		}
 	)
+	if pq.withUser != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, password.ForeignKeys...)
 	}
@@ -346,6 +388,7 @@ func (pq *PasswordQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Pas
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Password{config: pq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -357,7 +400,46 @@ func (pq *PasswordQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Pas
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := pq.withUser; query != nil {
+		if err := pq.loadUser(ctx, query, nodes, nil,
+			func(n *Password, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (pq *PasswordQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Password, init func(*Password), assign func(*Password, *User)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Password)
+	for i := range nodes {
+		if nodes[i].user_password == nil {
+			continue
+		}
+		fk := *nodes[i].user_password
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_password" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (pq *PasswordQuery) sqlCount(ctx context.Context) (int, error) {
@@ -370,7 +452,7 @@ func (pq *PasswordQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pq *PasswordQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(password.Table, password.Columns, sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32))
+	_spec := sqlgraph.NewQuerySpec(password.Table, password.Columns, sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt))
 	_spec.From = pq.sql
 	if unique := pq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

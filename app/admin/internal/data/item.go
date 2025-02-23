@@ -15,7 +15,7 @@ func NewItemRepo(data *Data) ItemRepo {
 }
 
 func (r *ItemRepo) indexItem(ctx context.Context, it *ent.Item) error {
-	_, err := r.data.es.Index(r.data.conf.ElasticSearch.Indices).Id(string(it.ID)).Request(it).Do(ctx)
+	_, err := r.data.es.Index(r.data.conf.ElasticSearch.Indices).Id(string(rune(it.ID))).Request(it).Do(ctx)
 	if err != nil {
 		return err
 	}
@@ -34,15 +34,15 @@ func (r *ItemRepo) CreateItem(ctx context.Context, name string, description stri
 	return it, nil
 }
 
-func (r *ItemRepo) deleteItem(ctx context.Context, id int32) error {
-	_, err := r.data.es.Delete(r.data.conf.ElasticSearch.Indices, string(id)).Do(ctx)
+func (r *ItemRepo) deleteItem(ctx context.Context, id int) error {
+	_, err := r.data.es.Delete(r.data.conf.ElasticSearch.Indices, string(rune(id))).Do(ctx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *ItemRepo) DeleteItem(ctx context.Context, id int32) error {
+func (r *ItemRepo) DeleteItem(ctx context.Context, id int) error {
 	err := r.data.db.Item.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (r *ItemRepo) DeleteItem(ctx context.Context, id int32) error {
 	return nil
 }
 
-func (r *ItemRepo) FindItemByID(ctx context.Context, id int32) (*ent.Item, error) {
+func (r *ItemRepo) FindItemByID(ctx context.Context, id int) (*ent.Item, error) {
 	it, err := r.data.db.Item.Query().Where(item.ID(id)).Only(ctx)
 	if err != nil {
 		return nil, err

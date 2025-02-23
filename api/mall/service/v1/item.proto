@@ -2,15 +2,61 @@ syntax = "proto3";
 
 package api.mall.service.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "mall/api/mall/service/v1";
 
 service ItemService {
-  rpc GetItem(GetItemRequest) returns (GetItemResponse) {}
-  rpc SearchItems(SearchItemsRequest) returns (SearchItemsResponse) {}
+  rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {
+    option (google.api.http) = {post: "/v1/item"};
+  }
+  rpc DeleteItem(DeleteItemRequest) returns (DeleteItemResponse) {
+    option (google.api.http) = {delete: "/v1/item"};
+  }
+  rpc EditItem(EditItemRequest) returns (EditItemResponse) {
+    option (google.api.http) = {put: "/v1/item"};
+  }
+  rpc GetItem(GetItemRequest) returns (GetItemResponse) {
+    option (google.api.http) = {get: "/v1/item/{id}"};
+  }
+  rpc SearchItems(SearchItemsRequest) returns (SearchItemsResponse) {
+    option (google.api.http) = {get: "/v1/item"};
+  }
+}
+
+message CreateItemRequest {
+  string name = 1;
+  string description = 2;
+  float price = 3;
+  int64 stock = 4;
+}
+
+message CreateItemResponse {
+  Item item = 1;
+}
+
+message DeleteItemRequest {
+  int64 id = 1;
+}
+
+message DeleteItemResponse {
+  Item item = 1;
+}
+
+message EditItemRequest {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  int64 stock = 5;
+}
+
+message EditItemResponse {
+  Item item = 1;
 }
 
 message GetItemRequest {
-  int32 id = 1;
+  int64 id = 1;
 }
 
 message GetItemResponse {
@@ -26,8 +72,9 @@ message SearchItemsResponse {
 }
 
 message Item {
-  int32 id = 1;
+  int64 id = 1;
   string name = 2;
   string description = 3;
   float price = 4;
+  int64 stock = 5;
 }

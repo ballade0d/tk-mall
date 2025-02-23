@@ -1,0 +1,70 @@
+package server
+
+import (
+	"context"
+	"fmt"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"log"
+	v1 "mall/api/mall/service/v1"
+	"mall/app/order/internal/service"
+	"mall/app/order/internal/util"
+	"net"
+	"slices"
+)
+
+// /api.mall.service.v1.UserService/Register
+var routesNeedAuth = []string{}
+
+func jwtAuthInterceptor(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+	if !slices.Contains(routesNeedAuth, info.FullMethod) {
+		return handler(ctx, req)
+	}
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("missing metadata")
+	}
+
+	authHeader, ok := md["authorization"]
+	if !ok || len(authHeader) == 0 {
+		return nil, fmt.Errorf("missing authorization token")
+	}
+
+	tokenStr := authHeader[0]
+	if len(tokenStr) > 7 && tokenStr[:7] == "Bearer " {
+		tokenStr = tokenStr[7:]
+	}
+
+	claims, err := util.VerifyJWT(tokenStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid token: %v", err)
+	}
+
+	ctx = context.WithValue(ctx, "claims", claims)
+
+	return handler(ctx, req)
+}
+
+func NewGRPCServer(service *service.OrderService) *grpc.Server {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(jwtAuthInterceptor))
+
+	v1.RegisterOrderServiceServer(grpcServer, service)
+
+	go func() {
+		log.Println("grpc server start at :50051")
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+	NewHTTPServer()
+	return grpcServer
+}

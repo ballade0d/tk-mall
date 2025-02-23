@@ -17,6 +17,8 @@ const (
 	FieldDescription = "description"
 	// FieldPrice holds the string denoting the price field in the database.
 	FieldPrice = "price"
+	// FieldStock holds the string denoting the stock field in the database.
+	FieldStock = "stock"
 	// Table holds the table name of the item in the database.
 	Table = "items"
 )
@@ -27,6 +29,7 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldPrice,
+	FieldStock,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -60,4 +63,9 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByPrice orders the results by the price field.
 func ByPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrice, opts...).ToFunc()
+}
+
+// ByStock orders the results by the stock field.
+func ByStock(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStock, opts...).ToFunc()
 }

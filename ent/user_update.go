@@ -57,14 +57,14 @@ func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
 }
 
 // AddPasswordIDs adds the "password" edge to the Password entity by IDs.
-func (uu *UserUpdate) AddPasswordIDs(ids ...int32) *UserUpdate {
+func (uu *UserUpdate) AddPasswordIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddPasswordIDs(ids...)
 	return uu
 }
 
 // AddPassword adds the "password" edges to the Password entity.
 func (uu *UserUpdate) AddPassword(p ...*Password) *UserUpdate {
-	ids := make([]int32, len(p))
+	ids := make([]int, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -83,14 +83,14 @@ func (uu *UserUpdate) ClearPassword() *UserUpdate {
 }
 
 // RemovePasswordIDs removes the "password" edge to Password entities by IDs.
-func (uu *UserUpdate) RemovePasswordIDs(ids ...int32) *UserUpdate {
+func (uu *UserUpdate) RemovePasswordIDs(ids ...int) *UserUpdate {
 	uu.mutation.RemovePasswordIDs(ids...)
 	return uu
 }
 
 // RemovePassword removes "password" edges to Password entities.
 func (uu *UserUpdate) RemovePassword(p ...*Password) *UserUpdate {
-	ids := make([]int32, len(p))
+	ids := make([]int, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -125,7 +125,7 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 }
 
 func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt32))
+	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt))
 	if ps := uu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -147,7 +147,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PasswordColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32),
+				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -160,7 +160,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PasswordColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32),
+				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -176,7 +176,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PasswordColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32),
+				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -233,14 +233,14 @@ func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
 }
 
 // AddPasswordIDs adds the "password" edge to the Password entity by IDs.
-func (uuo *UserUpdateOne) AddPasswordIDs(ids ...int32) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddPasswordIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddPasswordIDs(ids...)
 	return uuo
 }
 
 // AddPassword adds the "password" edges to the Password entity.
 func (uuo *UserUpdateOne) AddPassword(p ...*Password) *UserUpdateOne {
-	ids := make([]int32, len(p))
+	ids := make([]int, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -259,14 +259,14 @@ func (uuo *UserUpdateOne) ClearPassword() *UserUpdateOne {
 }
 
 // RemovePasswordIDs removes the "password" edge to Password entities by IDs.
-func (uuo *UserUpdateOne) RemovePasswordIDs(ids ...int32) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemovePasswordIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.RemovePasswordIDs(ids...)
 	return uuo
 }
 
 // RemovePassword removes "password" edges to Password entities.
 func (uuo *UserUpdateOne) RemovePassword(p ...*Password) *UserUpdateOne {
-	ids := make([]int32, len(p))
+	ids := make([]int, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -314,7 +314,7 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 }
 
 func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
-	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt32))
+	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt))
 	id, ok := uuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "User.id" for update`)}
@@ -353,7 +353,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PasswordColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32),
+				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -366,7 +366,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PasswordColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32),
+				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -382,7 +382,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PasswordColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32),
+				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -82,8 +82,8 @@ func (iq *ItemQuery) FirstX(ctx context.Context) *Item {
 
 // FirstID returns the first Item ID from the query.
 // Returns a *NotFoundError when no Item ID was found.
-func (iq *ItemQuery) FirstID(ctx context.Context) (id int32, err error) {
-	var ids []int32
+func (iq *ItemQuery) FirstID(ctx context.Context) (id int, err error) {
+	var ids []int
 	if ids, err = iq.Limit(1).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -95,7 +95,7 @@ func (iq *ItemQuery) FirstID(ctx context.Context) (id int32, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (iq *ItemQuery) FirstIDX(ctx context.Context) int32 {
+func (iq *ItemQuery) FirstIDX(ctx context.Context) int {
 	id, err := iq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -133,8 +133,8 @@ func (iq *ItemQuery) OnlyX(ctx context.Context) *Item {
 // OnlyID is like Only, but returns the only Item ID in the query.
 // Returns a *NotSingularError when more than one Item ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (iq *ItemQuery) OnlyID(ctx context.Context) (id int32, err error) {
-	var ids []int32
+func (iq *ItemQuery) OnlyID(ctx context.Context) (id int, err error) {
+	var ids []int
 	if ids, err = iq.Limit(2).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -150,7 +150,7 @@ func (iq *ItemQuery) OnlyID(ctx context.Context) (id int32, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (iq *ItemQuery) OnlyIDX(ctx context.Context) int32 {
+func (iq *ItemQuery) OnlyIDX(ctx context.Context) int {
 	id, err := iq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -178,7 +178,7 @@ func (iq *ItemQuery) AllX(ctx context.Context) []*Item {
 }
 
 // IDs executes the query and returns a list of Item IDs.
-func (iq *ItemQuery) IDs(ctx context.Context) (ids []int32, err error) {
+func (iq *ItemQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if iq.ctx.Unique == nil && iq.path != nil {
 		iq.Unique(true)
 	}
@@ -190,7 +190,7 @@ func (iq *ItemQuery) IDs(ctx context.Context) (ids []int32, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (iq *ItemQuery) IDsX(ctx context.Context) []int32 {
+func (iq *ItemQuery) IDsX(ctx context.Context) []int {
 	ids, err := iq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -365,7 +365,7 @@ func (iq *ItemQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (iq *ItemQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(item.Table, item.Columns, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt32))
+	_spec := sqlgraph.NewQuerySpec(item.Table, item.Columns, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt))
 	_spec.From = iq.sql
 	if unique := iq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

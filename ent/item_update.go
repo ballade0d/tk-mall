@@ -76,6 +76,27 @@ func (iu *ItemUpdate) AddPrice(f float32) *ItemUpdate {
 	return iu
 }
 
+// SetStock sets the "stock" field.
+func (iu *ItemUpdate) SetStock(i int) *ItemUpdate {
+	iu.mutation.ResetStock()
+	iu.mutation.SetStock(i)
+	return iu
+}
+
+// SetNillableStock sets the "stock" field if the given value is not nil.
+func (iu *ItemUpdate) SetNillableStock(i *int) *ItemUpdate {
+	if i != nil {
+		iu.SetStock(*i)
+	}
+	return iu
+}
+
+// AddStock adds i to the "stock" field.
+func (iu *ItemUpdate) AddStock(i int) *ItemUpdate {
+	iu.mutation.AddStock(i)
+	return iu
+}
+
 // Mutation returns the ItemMutation object of the builder.
 func (iu *ItemUpdate) Mutation() *ItemMutation {
 	return iu.mutation
@@ -109,7 +130,7 @@ func (iu *ItemUpdate) ExecX(ctx context.Context) {
 }
 
 func (iu *ItemUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(item.Table, item.Columns, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt32))
+	_spec := sqlgraph.NewUpdateSpec(item.Table, item.Columns, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt))
 	if ps := iu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -128,6 +149,12 @@ func (iu *ItemUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := iu.mutation.AddedPrice(); ok {
 		_spec.AddField(item.FieldPrice, field.TypeFloat32, value)
+	}
+	if value, ok := iu.mutation.Stock(); ok {
+		_spec.SetField(item.FieldStock, field.TypeInt, value)
+	}
+	if value, ok := iu.mutation.AddedStock(); ok {
+		_spec.AddField(item.FieldStock, field.TypeInt, value)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, iu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -198,6 +225,27 @@ func (iuo *ItemUpdateOne) AddPrice(f float32) *ItemUpdateOne {
 	return iuo
 }
 
+// SetStock sets the "stock" field.
+func (iuo *ItemUpdateOne) SetStock(i int) *ItemUpdateOne {
+	iuo.mutation.ResetStock()
+	iuo.mutation.SetStock(i)
+	return iuo
+}
+
+// SetNillableStock sets the "stock" field if the given value is not nil.
+func (iuo *ItemUpdateOne) SetNillableStock(i *int) *ItemUpdateOne {
+	if i != nil {
+		iuo.SetStock(*i)
+	}
+	return iuo
+}
+
+// AddStock adds i to the "stock" field.
+func (iuo *ItemUpdateOne) AddStock(i int) *ItemUpdateOne {
+	iuo.mutation.AddStock(i)
+	return iuo
+}
+
 // Mutation returns the ItemMutation object of the builder.
 func (iuo *ItemUpdateOne) Mutation() *ItemMutation {
 	return iuo.mutation
@@ -244,7 +292,7 @@ func (iuo *ItemUpdateOne) ExecX(ctx context.Context) {
 }
 
 func (iuo *ItemUpdateOne) sqlSave(ctx context.Context) (_node *Item, err error) {
-	_spec := sqlgraph.NewUpdateSpec(item.Table, item.Columns, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt32))
+	_spec := sqlgraph.NewUpdateSpec(item.Table, item.Columns, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt))
 	id, ok := iuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Item.id" for update`)}
@@ -280,6 +328,12 @@ func (iuo *ItemUpdateOne) sqlSave(ctx context.Context) (_node *Item, err error) 
 	}
 	if value, ok := iuo.mutation.AddedPrice(); ok {
 		_spec.AddField(item.FieldPrice, field.TypeFloat32, value)
+	}
+	if value, ok := iuo.mutation.Stock(); ok {
+		_spec.SetField(item.FieldStock, field.TypeInt, value)
+	}
+	if value, ok := iuo.mutation.AddedStock(); ok {
+		_spec.AddField(item.FieldStock, field.TypeInt, value)
 	}
 	_node = &Item{config: iuo.config}
 	_spec.Assign = _node.assignValues

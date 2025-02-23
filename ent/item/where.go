@@ -9,47 +9,47 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int32) predicate.Item {
+func ID(id int) predicate.Item {
 	return predicate.Item(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int32) predicate.Item {
+func IDEQ(id int) predicate.Item {
 	return predicate.Item(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int32) predicate.Item {
+func IDNEQ(id int) predicate.Item {
 	return predicate.Item(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int32) predicate.Item {
+func IDIn(ids ...int) predicate.Item {
 	return predicate.Item(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int32) predicate.Item {
+func IDNotIn(ids ...int) predicate.Item {
 	return predicate.Item(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int32) predicate.Item {
+func IDGT(id int) predicate.Item {
 	return predicate.Item(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int32) predicate.Item {
+func IDGTE(id int) predicate.Item {
 	return predicate.Item(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int32) predicate.Item {
+func IDLT(id int) predicate.Item {
 	return predicate.Item(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int32) predicate.Item {
+func IDLTE(id int) predicate.Item {
 	return predicate.Item(sql.FieldLTE(FieldID, id))
 }
 
@@ -66,6 +66,11 @@ func Description(v string) predicate.Item {
 // Price applies equality check predicate on the "price" field. It's identical to PriceEQ.
 func Price(v float32) predicate.Item {
 	return predicate.Item(sql.FieldEQ(FieldPrice, v))
+}
+
+// Stock applies equality check predicate on the "stock" field. It's identical to StockEQ.
+func Stock(v int) predicate.Item {
+	return predicate.Item(sql.FieldEQ(FieldStock, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -236,6 +241,46 @@ func PriceLT(v float32) predicate.Item {
 // PriceLTE applies the LTE predicate on the "price" field.
 func PriceLTE(v float32) predicate.Item {
 	return predicate.Item(sql.FieldLTE(FieldPrice, v))
+}
+
+// StockEQ applies the EQ predicate on the "stock" field.
+func StockEQ(v int) predicate.Item {
+	return predicate.Item(sql.FieldEQ(FieldStock, v))
+}
+
+// StockNEQ applies the NEQ predicate on the "stock" field.
+func StockNEQ(v int) predicate.Item {
+	return predicate.Item(sql.FieldNEQ(FieldStock, v))
+}
+
+// StockIn applies the In predicate on the "stock" field.
+func StockIn(vs ...int) predicate.Item {
+	return predicate.Item(sql.FieldIn(FieldStock, vs...))
+}
+
+// StockNotIn applies the NotIn predicate on the "stock" field.
+func StockNotIn(vs ...int) predicate.Item {
+	return predicate.Item(sql.FieldNotIn(FieldStock, vs...))
+}
+
+// StockGT applies the GT predicate on the "stock" field.
+func StockGT(v int) predicate.Item {
+	return predicate.Item(sql.FieldGT(FieldStock, v))
+}
+
+// StockGTE applies the GTE predicate on the "stock" field.
+func StockGTE(v int) predicate.Item {
+	return predicate.Item(sql.FieldGTE(FieldStock, v))
+}
+
+// StockLT applies the LT predicate on the "stock" field.
+func StockLT(v int) predicate.Item {
+	return predicate.Item(sql.FieldLT(FieldStock, v))
+}
+
+// StockLTE applies the LTE predicate on the "stock" field.
+func StockLTE(v int) predicate.Item {
+	return predicate.Item(sql.FieldLTE(FieldStock, v))
 }
 
 // And groups predicates with the AND operator between them.

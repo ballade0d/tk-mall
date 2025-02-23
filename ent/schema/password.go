@@ -14,7 +14,7 @@ type Password struct {
 // Fields of the Password.
 func (Password) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int32("id"),
+		field.Int("id"),
 		field.String("password"),
 	}
 }
@@ -22,6 +22,6 @@ func (Password) Fields() []ent.Field {
 // Edges of the Password.
 func (Password) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type),
+		edge.From("user", User.Type).Ref("password").Unique(),
 	}
 }

@@ -300,11 +300,13 @@ type ItemMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *int32
+	id            *int
 	name          *string
 	description   *string
 	price         *float32
 	addprice      *float32
+	stock         *int
+	addstock      *int
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*Item, error)
@@ -331,7 +333,7 @@ func newItemMutation(c config, op Op, opts ...itemOption) *ItemMutation {
 }
 
 // withItemID sets the ID field of the mutation.
-func withItemID(id int32) itemOption {
+func withItemID(id int) itemOption {
 	return func(m *ItemMutation) {
 		var (
 			err   error
@@ -383,13 +385,13 @@ func (m ItemMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of Item entities.
-func (m *ItemMutation) SetID(id int32) {
+func (m *ItemMutation) SetID(id int) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *ItemMutation) ID() (id int32, exists bool) {
+func (m *ItemMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -400,12 +402,12 @@ func (m *ItemMutation) ID() (id int32, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *ItemMutation) IDs(ctx context.Context) ([]int32, error) {
+func (m *ItemMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int32{id}, nil
+			return []int{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -543,6 +545,62 @@ func (m *ItemMutation) ResetPrice() {
 	m.addprice = nil
 }
 
+// SetStock sets the "stock" field.
+func (m *ItemMutation) SetStock(i int) {
+	m.stock = &i
+	m.addstock = nil
+}
+
+// Stock returns the value of the "stock" field in the mutation.
+func (m *ItemMutation) Stock() (r int, exists bool) {
+	v := m.stock
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStock returns the old "stock" field's value of the Item entity.
+// If the Item object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ItemMutation) OldStock(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStock is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStock requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStock: %w", err)
+	}
+	return oldValue.Stock, nil
+}
+
+// AddStock adds i to the "stock" field.
+func (m *ItemMutation) AddStock(i int) {
+	if m.addstock != nil {
+		*m.addstock += i
+	} else {
+		m.addstock = &i
+	}
+}
+
+// AddedStock returns the value that was added to the "stock" field in this mutation.
+func (m *ItemMutation) AddedStock() (r int, exists bool) {
+	v := m.addstock
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStock resets all changes to the "stock" field.
+func (m *ItemMutation) ResetStock() {
+	m.stock = nil
+	m.addstock = nil
+}
+
 // Where appends a list predicates to the ItemMutation builder.
 func (m *ItemMutation) Where(ps ...predicate.Item) {
 	m.predicates = append(m.predicates, ps...)
@@ -577,7 +635,7 @@ func (m *ItemMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ItemMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.name != nil {
 		fields = append(fields, item.FieldName)
 	}
@@ -586,6 +644,9 @@ func (m *ItemMutation) Fields() []string {
 	}
 	if m.price != nil {
 		fields = append(fields, item.FieldPrice)
+	}
+	if m.stock != nil {
+		fields = append(fields, item.FieldStock)
 	}
 	return fields
 }
@@ -601,6 +662,8 @@ func (m *ItemMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case item.FieldPrice:
 		return m.Price()
+	case item.FieldStock:
+		return m.Stock()
 	}
 	return nil, false
 }
@@ -616,6 +679,8 @@ func (m *ItemMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDescription(ctx)
 	case item.FieldPrice:
 		return m.OldPrice(ctx)
+	case item.FieldStock:
+		return m.OldStock(ctx)
 	}
 	return nil, fmt.Errorf("unknown Item field %s", name)
 }
@@ -646,6 +711,13 @@ func (m *ItemMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPrice(v)
 		return nil
+	case item.FieldStock:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStock(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Item field %s", name)
 }
@@ -657,6 +729,9 @@ func (m *ItemMutation) AddedFields() []string {
 	if m.addprice != nil {
 		fields = append(fields, item.FieldPrice)
 	}
+	if m.addstock != nil {
+		fields = append(fields, item.FieldStock)
+	}
 	return fields
 }
 
@@ -667,6 +742,8 @@ func (m *ItemMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case item.FieldPrice:
 		return m.AddedPrice()
+	case item.FieldStock:
+		return m.AddedStock()
 	}
 	return nil, false
 }
@@ -682,6 +759,13 @@ func (m *ItemMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddPrice(v)
+		return nil
+	case item.FieldStock:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStock(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Item numeric field %s", name)
@@ -718,6 +802,9 @@ func (m *ItemMutation) ResetField(name string) error {
 		return nil
 	case item.FieldPrice:
 		m.ResetPrice()
+		return nil
+	case item.FieldStock:
+		m.ResetStock()
 		return nil
 	}
 	return fmt.Errorf("unknown Item field %s", name)
@@ -776,9 +863,11 @@ type PasswordMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *int32
+	id            *int
 	password      *string
 	clearedFields map[string]struct{}
+	user          *int
+	cleareduser   bool
 	done          bool
 	oldValue      func(context.Context) (*Password, error)
 	predicates    []predicate.Password
@@ -804,7 +893,7 @@ func newPasswordMutation(c config, op Op, opts ...passwordOption) *PasswordMutat
 }
 
 // withPasswordID sets the ID field of the mutation.
-func withPasswordID(id int32) passwordOption {
+func withPasswordID(id int) passwordOption {
 	return func(m *PasswordMutation) {
 		var (
 			err   error
@@ -856,13 +945,13 @@ func (m PasswordMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of Password entities.
-func (m *PasswordMutation) SetID(id int32) {
+func (m *PasswordMutation) SetID(id int) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *PasswordMutation) ID() (id int32, exists bool) {
+func (m *PasswordMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -873,12 +962,12 @@ func (m *PasswordMutation) ID() (id int32, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *PasswordMutation) IDs(ctx context.Context) ([]int32, error) {
+func (m *PasswordMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int32{id}, nil
+			return []int{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -922,6 +1011,45 @@ func (m *PasswordMutation) OldPassword(ctx context.Context) (v string, err error
 // ResetPassword resets all changes to the "password" field.
 func (m *PasswordMutation) ResetPassword() {
 	m.password = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *PasswordMutation) SetUserID(id int) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *PasswordMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *PasswordMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *PasswordMutation) UserID() (id int, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *PasswordMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *PasswordMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
 }
 
 // Where appends a list predicates to the PasswordMutation builder.
@@ -1057,19 +1185,28 @@ func (m *PasswordMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PasswordMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, password.EdgeUser)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *PasswordMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case password.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PasswordMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -1081,25 +1218,42 @@ func (m *PasswordMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PasswordMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, password.EdgeUser)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *PasswordMutation) EdgeCleared(name string) bool {
+	switch name {
+	case password.EdgeUser:
+		return m.cleareduser
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *PasswordMutation) ClearEdge(name string) error {
+	switch name {
+	case password.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
 	return fmt.Errorf("unknown Password unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *PasswordMutation) ResetEdge(name string) error {
+	switch name {
+	case password.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
 	return fmt.Errorf("unknown Password edge %s", name)
 }
 
@@ -1108,12 +1262,12 @@ type UserMutation struct {
 	config
 	op              Op
 	typ             string
-	id              *int32
+	id              *int
 	name            *string
 	email           *string
 	clearedFields   map[string]struct{}
-	password        map[int32]struct{}
-	removedpassword map[int32]struct{}
+	password        map[int]struct{}
+	removedpassword map[int]struct{}
 	clearedpassword bool
 	done            bool
 	oldValue        func(context.Context) (*User, error)
@@ -1140,7 +1294,7 @@ func newUserMutation(c config, op Op, opts ...userOption) *UserMutation {
 }
 
 // withUserID sets the ID field of the mutation.
-func withUserID(id int32) userOption {
+func withUserID(id int) userOption {
 	return func(m *UserMutation) {
 		var (
 			err   error
@@ -1192,13 +1346,13 @@ func (m UserMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of User entities.
-func (m *UserMutation) SetID(id int32) {
+func (m *UserMutation) SetID(id int) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *UserMutation) ID() (id int32, exists bool) {
+func (m *UserMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -1209,12 +1363,12 @@ func (m *UserMutation) ID() (id int32, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *UserMutation) IDs(ctx context.Context) ([]int32, error) {
+func (m *UserMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int32{id}, nil
+			return []int{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -1297,9 +1451,9 @@ func (m *UserMutation) ResetEmail() {
 }
 
 // AddPasswordIDs adds the "password" edge to the Password entity by ids.
-func (m *UserMutation) AddPasswordIDs(ids ...int32) {
+func (m *UserMutation) AddPasswordIDs(ids ...int) {
 	if m.password == nil {
-		m.password = make(map[int32]struct{})
+		m.password = make(map[int]struct{})
 	}
 	for i := range ids {
 		m.password[ids[i]] = struct{}{}
@@ -1317,9 +1471,9 @@ func (m *UserMutation) PasswordCleared() bool {
 }
 
 // RemovePasswordIDs removes the "password" edge to the Password entity by IDs.
-func (m *UserMutation) RemovePasswordIDs(ids ...int32) {
+func (m *UserMutation) RemovePasswordIDs(ids ...int) {
 	if m.removedpassword == nil {
-		m.removedpassword = make(map[int32]struct{})
+		m.removedpassword = make(map[int]struct{})
 	}
 	for i := range ids {
 		delete(m.password, ids[i])
@@ -1328,7 +1482,7 @@ func (m *UserMutation) RemovePasswordIDs(ids ...int32) {
 }
 
 // RemovedPassword returns the removed IDs of the "password" edge to the Password entity.
-func (m *UserMutation) RemovedPasswordIDs() (ids []int32) {
+func (m *UserMutation) RemovedPasswordIDs() (ids []int) {
 	for id := range m.removedpassword {
 		ids = append(ids, id)
 	}
@@ -1336,7 +1490,7 @@ func (m *UserMutation) RemovedPasswordIDs() (ids []int32) {
 }
 
 // PasswordIDs returns the "password" edge IDs in the mutation.
-func (m *UserMutation) PasswordIDs() (ids []int32) {
+func (m *UserMutation) PasswordIDs() (ids []int) {
 	for id := range m.password {
 		ids = append(ids, id)
 	}

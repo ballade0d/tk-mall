@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"mall/ent/password"
+	"mall/ent/user"
 	"strings"
 
 	"entgo.io/ent"
@@ -15,11 +16,34 @@ import (
 type Password struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int32 `json:"id,omitempty"`
+	ID int `json:"id,omitempty"`
 	// Password holds the value of the "password" field.
-	Password      string `json:"password,omitempty"`
-	user_password *int32
+	Password string `json:"password,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the PasswordQuery when eager-loading is set.
+	Edges         PasswordEdges `json:"edges"`
+	user_password *int
 	selectValues  sql.SelectValues
+}
+
+// PasswordEdges holds the relations/edges for other nodes in the graph.
+type PasswordEdges struct {
+	// User holds the value of the user edge.
+	User *User `json:"user,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// UserOrErr returns the User value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PasswordEdges) UserOrErr() (*User, error) {
+	if e.User != nil {
+		return e.User, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
+	}
+	return nil, &NotLoadedError{edge: "user"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -53,7 +77,7 @@ func (pa *Password) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			pa.ID = int32(value.Int64)
+			pa.ID = int(value.Int64)
 		case password.FieldPassword:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field password", values[i])
@@ -64,8 +88,8 @@ func (pa *Password) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field user_password", value)
 			} else if value.Valid {
-				pa.user_password = new(int32)
-				*pa.user_password = int32(value.Int64)
+				pa.user_password = new(int)
+				*pa.user_password = int(value.Int64)
 			}
 		default:
 			pa.selectValues.Set(columns[i], values[i])
@@ -78,6 +102,11 @@ func (pa *Password) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (pa *Password) Value(name string) (ent.Value, error) {
 	return pa.selectValues.Get(name)
+}
+
+// QueryUser queries the "user" edge of the Password entity.
+func (pa *Password) QueryUser() *UserQuery {
+	return NewPasswordClient(pa.config).QueryUser(pa)
 }
 
 // Update returns a builder for updating this Password.

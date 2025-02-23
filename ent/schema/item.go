@@ -13,10 +13,11 @@ type Item struct {
 // Fields of the Item.
 func (Item) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int32("id"),
+		field.Int("id"),
 		field.String("name"),
 		field.Text("description"),
 		field.Float32("price"),
+		field.Int("stock"),
 	}
 }
 

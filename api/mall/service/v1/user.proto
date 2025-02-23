@@ -8,9 +8,7 @@ option go_package = "api/mall/service/v1";
 
 service UserService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
-    option (google.api.http) = {
-      get: "/v1/user/{id}"
-    };
+    option (google.api.http) = {get: "/v1/user/{id}"};
   }
   rpc Register(RegisterRequest) returns (RegisterResponse) {
     option (google.api.http) = {
@@ -24,10 +22,16 @@ service UserService {
       body: "*"
     };
   }
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/user/refresh"
+      body: "*"
+    };
+  }
 }
 
 message GetUserRequest {
-  int32 id = 1;
+  int64 id = 1;
 }
 
 message GetUserResponse {
@@ -53,8 +57,17 @@ message LoginResponse {
   Token token = 1;
 }
 
+message RefreshTokenRequest {
+  string token = 1;
+  string refresh_token = 2;
+}
+
+message RefreshTokenResponse {
+  Token token = 1;
+}
+
 message User {
-  int32 id = 1;
+  int64 id = 1;
   string name = 2;
   string email = 3;
 }

@@ -2,27 +2,37 @@ syntax = "proto3";
 
 package api.mall.service.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "mall/api/mall/service/v1";
 
 service CartService {
-  rpc GetCart(GetCartRequest) returns (GetCartResponse) {}
-  rpc AddToCart(AddToCartRequest) returns (AddToCartResponse) {}
-  rpc RemoveFromCart(RemoveFromCartRequest) returns (RemoveFromCartResponse) {}
-  rpc ClearCart(ClearCartRequest) returns (ClearCartResponse) {}
+  rpc GetCart(GetCartRequest) returns (GetCartResponse) {
+    option (google.api.http) = {get: "/v1/cart"};
+  }
+  rpc AddToCart(AddToCartRequest) returns (AddToCartResponse) {
+    option (google.api.http) = {
+      post: "/v1/cart"
+      body: "*"
+    };
+  }
+  rpc RemoveFromCart(RemoveFromCartRequest) returns (RemoveFromCartResponse) {
+    option (google.api.http) = {delete: "/v1/cart/{item_id}"};
+  }
+  rpc ClearCart(ClearCartRequest) returns (ClearCartResponse) {
+    option (google.api.http) = {post: "/v1/cart/clear"};
+  }
 }
 
-message GetCartRequest {
-  int32 user_id = 1;
-}
+message GetCartRequest {}
 
 message GetCartResponse {
   Cart cart = 1;
 }
 
 message AddToCartRequest {
-  int32 user_id = 1;
-  int32 item_id = 2;
-  int32 quantity = 3;
+  int64 item_id = 2;
+  int64 quantity = 3;
 }
 
 message AddToCartResponse {
@@ -30,28 +40,24 @@ message AddToCartResponse {
 }
 
 message RemoveFromCartRequest {
-  int32 user_id = 1;
-  int32 item_id = 2;
+  int64 item_id = 2;
 }
 
 message RemoveFromCartResponse {
   Cart cart = 1;
 }
 
-message ClearCartRequest {
-  int32 user_id = 1;
-}
+message ClearCartRequest {}
 
 message ClearCartResponse {
   Cart cart = 1;
 }
 
 message Cart {
-  int32 user_id = 1;
   repeated CartItem items = 2;
 }
 
 message CartItem {
-  int32 item_id = 1;
-  int32 quantity = 2;
+  int64 item_id = 1;
+  int64 quantity = 2;
 }

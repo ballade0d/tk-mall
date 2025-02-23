@@ -37,8 +37,14 @@ func (ic *ItemCreate) SetPrice(f float32) *ItemCreate {
 	return ic
 }
 
+// SetStock sets the "stock" field.
+func (ic *ItemCreate) SetStock(i int) *ItemCreate {
+	ic.mutation.SetStock(i)
+	return ic
+}
+
 // SetID sets the "id" field.
-func (ic *ItemCreate) SetID(i int32) *ItemCreate {
+func (ic *ItemCreate) SetID(i int) *ItemCreate {
 	ic.mutation.SetID(i)
 	return ic
 }
@@ -86,6 +92,9 @@ func (ic *ItemCreate) check() error {
 	if _, ok := ic.mutation.Price(); !ok {
 		return &ValidationError{Name: "price", err: errors.New(`ent: missing required field "Item.price"`)}
 	}
+	if _, ok := ic.mutation.Stock(); !ok {
+		return &ValidationError{Name: "stock", err: errors.New(`ent: missing required field "Item.stock"`)}
+	}
 	return nil
 }
 
@@ -102,7 +111,7 @@ func (ic *ItemCreate) sqlSave(ctx context.Context) (*Item, error) {
 	}
 	if _spec.ID.Value != _node.ID {
 		id := _spec.ID.Value.(int64)
-		_node.ID = int32(id)
+		_node.ID = int(id)
 	}
 	ic.mutation.id = &_node.ID
 	ic.mutation.done = true
@@ -112,7 +121,7 @@ func (ic *ItemCreate) sqlSave(ctx context.Context) (*Item, error) {
 func (ic *ItemCreate) createSpec() (*Item, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Item{config: ic.config}
-		_spec = sqlgraph.NewCreateSpec(item.Table, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt32))
+		_spec = sqlgraph.NewCreateSpec(item.Table, sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt))
 	)
 	if id, ok := ic.mutation.ID(); ok {
 		_node.ID = id
@@ -129,6 +138,10 @@ func (ic *ItemCreate) createSpec() (*Item, *sqlgraph.CreateSpec) {
 	if value, ok := ic.mutation.Price(); ok {
 		_spec.SetField(item.FieldPrice, field.TypeFloat32, value)
 		_node.Price = value
+	}
+	if value, ok := ic.mutation.Stock(); ok {
+		_spec.SetField(item.FieldStock, field.TypeInt, value)
+		_node.Stock = value
 	}
 	return _node, _spec
 }
@@ -179,7 +192,7 @@ func (icb *ItemCreateBulk) Save(ctx context.Context) ([]*Item, error) {
 				mutation.id = &nodes[i].ID
 				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
 					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int32(id)
+					nodes[i].ID = int(id)
 				}
 				mutation.done = true
 				return nodes[i], nil

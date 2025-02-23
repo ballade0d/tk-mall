@@ -19,6 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	ItemService_CreateItem_FullMethodName  = "/api.mall.service.v1.ItemService/CreateItem"
+	ItemService_DeleteItem_FullMethodName  = "/api.mall.service.v1.ItemService/DeleteItem"
+	ItemService_EditItem_FullMethodName    = "/api.mall.service.v1.ItemService/EditItem"
 	ItemService_GetItem_FullMethodName     = "/api.mall.service.v1.ItemService/GetItem"
 	ItemService_SearchItems_FullMethodName = "/api.mall.service.v1.ItemService/SearchItems"
 )
@@ -27,6 +30,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ItemServiceClient interface {
+	CreateItem(ctx context.Context, in *CreateItemRequest, opts ...grpc.CallOption) (*CreateItemResponse, error)
+	DeleteItem(ctx context.Context, in *DeleteItemRequest, opts ...grpc.CallOption) (*DeleteItemResponse, error)
+	EditItem(ctx context.Context, in *EditItemRequest, opts ...grpc.CallOption) (*EditItemResponse, error)
 	GetItem(ctx context.Context, in *GetItemRequest, opts ...grpc.CallOption) (*GetItemResponse, error)
 	SearchItems(ctx context.Context, in *SearchItemsRequest, opts ...grpc.CallOption) (*SearchItemsResponse, error)
 }
@@ -37,6 +43,36 @@ type itemServiceClient struct {
 
 func NewItemServiceClient(cc grpc.ClientConnInterface) ItemServiceClient {
 	return &itemServiceClient{cc}
+}
+
+func (c *itemServiceClient) CreateItem(ctx context.Context, in *CreateItemRequest, opts ...grpc.CallOption) (*CreateItemResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateItemResponse)
+	err := c.cc.Invoke(ctx, ItemService_CreateItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) DeleteItem(ctx context.Context, in *DeleteItemRequest, opts ...grpc.CallOption) (*DeleteItemResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteItemResponse)
+	err := c.cc.Invoke(ctx, ItemService_DeleteItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) EditItem(ctx context.Context, in *EditItemRequest, opts ...grpc.CallOption) (*EditItemResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EditItemResponse)
+	err := c.cc.Invoke(ctx, ItemService_EditItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *itemServiceClient) GetItem(ctx context.Context, in *GetItemRequest, opts ...grpc.CallOption) (*GetItemResponse, error) {
@@ -63,6 +99,9 @@ func (c *itemServiceClient) SearchItems(ctx context.Context, in *SearchItemsRequ
 // All implementations must embed UnimplementedItemServiceServer
 // for forward compatibility.
 type ItemServiceServer interface {
+	CreateItem(context.Context, *CreateItemRequest) (*CreateItemResponse, error)
+	DeleteItem(context.Context, *DeleteItemRequest) (*DeleteItemResponse, error)
+	EditItem(context.Context, *EditItemRequest) (*EditItemResponse, error)
 	GetItem(context.Context, *GetItemRequest) (*GetItemResponse, error)
 	SearchItems(context.Context, *SearchItemsRequest) (*SearchItemsResponse, error)
 	mustEmbedUnimplementedItemServiceServer()
@@ -75,6 +114,15 @@ type ItemServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedItemServiceServer struct{}
 
+func (UnimplementedItemServiceServer) CreateItem(context.Context, *CreateItemRequest) (*CreateItemResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateItem not implemented")
+}
+func (UnimplementedItemServiceServer) DeleteItem(context.Context, *DeleteItemRequest) (*DeleteItemResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteItem not implemented")
+}
+func (UnimplementedItemServiceServer) EditItem(context.Context, *EditItemRequest) (*EditItemResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditItem not implemented")
+}
 func (UnimplementedItemServiceServer) GetItem(context.Context, *GetItemRequest) (*GetItemResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetItem not implemented")
 }
@@ -100,6 +148,60 @@ func RegisterItemServiceServer(s grpc.ServiceRegistrar, srv ItemServiceServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ItemService_ServiceDesc, srv)
+}
+
+func _ItemService_CreateItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).CreateItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_CreateItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).CreateItem(ctx, req.(*CreateItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_DeleteItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).DeleteItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_DeleteItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).DeleteItem(ctx, req.(*DeleteItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_EditItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).EditItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_EditItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).EditItem(ctx, req.(*EditItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ItemService_GetItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -145,6 +247,18 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "api.mall.service.v1.ItemService",
 	HandlerType: (*ItemServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateItem",
+			Handler:    _ItemService_CreateItem_Handler,
+		},
+		{
+			MethodName: "DeleteItem",
+			Handler:    _ItemService_DeleteItem_Handler,
+		},
+		{
+			MethodName: "EditItem",
+			Handler:    _ItemService_EditItem_Handler,
+		},
 		{
 			MethodName: "GetItem",
 			Handler:    _ItemService_GetItem_Handler,

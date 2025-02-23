@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"mall/ent/password"
+	"mall/ent/user"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -26,9 +27,28 @@ func (pc *PasswordCreate) SetPassword(s string) *PasswordCreate {
 }
 
 // SetID sets the "id" field.
-func (pc *PasswordCreate) SetID(i int32) *PasswordCreate {
+func (pc *PasswordCreate) SetID(i int) *PasswordCreate {
 	pc.mutation.SetID(i)
 	return pc
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (pc *PasswordCreate) SetUserID(id int) *PasswordCreate {
+	pc.mutation.SetUserID(id)
+	return pc
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (pc *PasswordCreate) SetNillableUserID(id *int) *PasswordCreate {
+	if id != nil {
+		pc = pc.SetUserID(*id)
+	}
+	return pc
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (pc *PasswordCreate) SetUser(u *User) *PasswordCreate {
+	return pc.SetUserID(u.ID)
 }
 
 // Mutation returns the PasswordMutation object of the builder.
@@ -84,7 +104,7 @@ func (pc *PasswordCreate) sqlSave(ctx context.Context) (*Password, error) {
 	}
 	if _spec.ID.Value != _node.ID {
 		id := _spec.ID.Value.(int64)
-		_node.ID = int32(id)
+		_node.ID = int(id)
 	}
 	pc.mutation.id = &_node.ID
 	pc.mutation.done = true
@@ -94,7 +114,7 @@ func (pc *PasswordCreate) sqlSave(ctx context.Context) (*Password, error) {
 func (pc *PasswordCreate) createSpec() (*Password, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Password{config: pc.config}
-		_spec = sqlgraph.NewCreateSpec(password.Table, sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt32))
+		_spec = sqlgraph.NewCreateSpec(password.Table, sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt))
 	)
 	if id, ok := pc.mutation.ID(); ok {
 		_node.ID = id
@@ -103,6 +123,23 @@ func (pc *PasswordCreate) createSpec() (*Password, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.Password(); ok {
 		_spec.SetField(password.FieldPassword, field.TypeString, value)
 		_node.Password = value
+	}
+	if nodes := pc.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   password.UserTable,
+			Columns: []string{password.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_password = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
@@ -153,7 +190,7 @@ func (pcb *PasswordCreateBulk) Save(ctx context.Context) ([]*Password, error) {
 				mutation.id = &nodes[i].ID
 				if specs[i].ID.Value != nil && nodes[i].ID == 0 {
 					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int32(id)
+					nodes[i].ID = int(id)
 				}
 				mutation.done = true
 				return nodes[i], nil

@@ -20,10 +20,11 @@ var (
 	}
 	// ItemsColumns holds the columns for the "items" table.
 	ItemsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt32, Increment: true},
+		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "price", Type: field.TypeFloat32},
+		{Name: "stock", Type: field.TypeInt},
 	}
 	// ItemsTable holds the schema information for the "items" table.
 	ItemsTable = &schema.Table{
@@ -33,9 +34,9 @@ var (
 	}
 	// PasswordsColumns holds the columns for the "passwords" table.
 	PasswordsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt32, Increment: true},
+		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "password", Type: field.TypeString},
-		{Name: "user_password", Type: field.TypeInt32, Nullable: true},
+		{Name: "user_password", Type: field.TypeInt, Nullable: true},
 	}
 	// PasswordsTable holds the schema information for the "passwords" table.
 	PasswordsTable = &schema.Table{
@@ -53,7 +54,7 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt32, Increment: true},
+		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString},
 	}

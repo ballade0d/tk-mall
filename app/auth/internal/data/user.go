@@ -14,7 +14,7 @@ func NewUserRepo(data *Data) UserRepo {
 	return UserRepo{data: data}
 }
 
-func (r *UserRepo) FindUserByID(ctx context.Context, id int32) (*ent.User, error) {
+func (r *UserRepo) FindUserByID(ctx context.Context, id int) (*ent.User, error) {
 	u, err := r.data.db.User.Query().Where(user.ID(id)).Only(ctx)
 	if err != nil {
 		return nil, err

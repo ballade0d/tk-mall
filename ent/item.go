@@ -15,13 +15,15 @@ import (
 type Item struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int32 `json:"id,omitempty"`
+	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Price holds the value of the "price" field.
-	Price        float32 `json:"price,omitempty"`
+	Price float32 `json:"price,omitempty"`
+	// Stock holds the value of the "stock" field.
+	Stock        int `json:"stock,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -32,7 +34,7 @@ func (*Item) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case item.FieldPrice:
 			values[i] = new(sql.NullFloat64)
-		case item.FieldID:
+		case item.FieldID, item.FieldStock:
 			values[i] = new(sql.NullInt64)
 		case item.FieldName, item.FieldDescription:
 			values[i] = new(sql.NullString)
@@ -56,7 +58,7 @@ func (i *Item) assignValues(columns []string, values []any) error {
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
-			i.ID = int32(value.Int64)
+			i.ID = int(value.Int64)
 		case item.FieldName:
 			if value, ok := values[j].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[j])
@@ -74,6 +76,12 @@ func (i *Item) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field price", values[j])
 			} else if value.Valid {
 				i.Price = float32(value.Float64)
+			}
+		case item.FieldStock:
+			if value, ok := values[j].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field stock", values[j])
+			} else if value.Valid {
+				i.Stock = int(value.Int64)
 			}
 		default:
 			i.selectValues.Set(columns[j], values[j])
@@ -119,6 +127,9 @@ func (i *Item) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("price=")
 	builder.WriteString(fmt.Sprintf("%v", i.Price))
+	builder.WriteString(", ")
+	builder.WriteString("stock=")
+	builder.WriteString(fmt.Sprintf("%v", i.Stock))
 	builder.WriteByte(')')
 	return builder.String()
 }
