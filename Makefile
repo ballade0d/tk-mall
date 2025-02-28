@@ -35,6 +35,6 @@ build-order:
 
 docker:
 	@echo "Building docker image..."
-	@docker build -t $(ADMIN_NAME):$(VERSION) --target admin-service .
-	@docker build -t $(GATEWAY_NAME):$(VERSION) --target gateway-service .
-	@docker build -t $(ORDER_NAME):$(VERSION) --target order-service .
+	@DOCKER_BUILDKIT=1 docker build -t $(ADMIN_NAME):$(VERSION) --target admin-service .
+	@DOCKER_BUILDKIT=1 docker build -t $(GATEWAY_NAME):$(VERSION) --target gateway-service .
+	@DOCKER_BUILDKIT=1 docker build -t $(ORDER_NAME):$(VERSION) --target order-service .

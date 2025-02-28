@@ -52,14 +52,15 @@ func jwtAuthInterceptor(
 	return handler(ctx, req)
 }
 
-func NewGRPCServer(service *service.UserService) *grpc.Server {
+func NewGRPCServer(userService *service.UserService, itemService *service.ItemService) *grpc.Server {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(jwtAuthInterceptor))
 
-	v1.RegisterUserServiceServer(grpcServer, service)
+	v1.RegisterUserServiceServer(grpcServer, userService)
+	v1.RegisterItemServiceServer(grpcServer, itemService)
 
 	go func() {
 		log.Println("grpc server start at :50051")

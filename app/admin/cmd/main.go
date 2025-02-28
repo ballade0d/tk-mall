@@ -1,7 +1,7 @@
 package main
 
 func main() {
-	err, _ := wireApp()
+	_, err := wireApp()
 	if err != nil {
 		panic(err)
 	}

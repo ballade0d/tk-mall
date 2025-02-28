@@ -40,7 +40,7 @@ var ProviderSet = wire.NewSet(NewConfig)
 func NewConfig() (*Config, error) {
 	var conf Config
 	// 加载配置文件
-	_, err := toml.DecodeFile("config.toml", &conf)
+	_, err := toml.DecodeFile("config-local.toml", &conf)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err

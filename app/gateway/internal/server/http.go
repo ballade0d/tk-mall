@@ -19,6 +19,10 @@ func NewHTTPServer() {
 	if err != nil {
 		log.Fatalf("failed to register gRPC gateway: %v", err)
 	}
+	err = v1.RegisterItemServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
+	if err != nil {
+		log.Fatalf("failed to register gRPC gateway: %v", err)
+	}
 
 	log.Println("HTTP server is running on port 8080")
 	err = http.ListenAndServe(":8080", mux)

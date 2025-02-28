@@ -28,6 +28,7 @@ func wireApp() (*grpc.Server, error) {
 	userRepo := data.NewUserRepo(dataData)
 	passwordRepo := data.NewPasswordRepo(dataData)
 	userService := service.NewUserService(userRepo, passwordRepo)
-	grpcServer := server.NewGRPCServer(userService)
+	itemService := service.NewItemService(dataData)
+	grpcServer := server.NewGRPCServer(userService, itemService)
 	return grpcServer, nil
 }

@@ -6,6 +6,6 @@ spec:
   selector:
     app: mall-order
   ports:
-    - port: 50051
-      targetPort: 50051
+    - port: 50020
+      targetPort: 50020
   clusterIP: None

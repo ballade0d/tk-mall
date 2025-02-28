@@ -4,7 +4,6 @@ FROM golang:1.23.6 AS builder
 
 COPY . /app
 WORKDIR /app
-
 RUN GOPROXY=https://goproxy.cn GO111MODULE=on go mod download \
         && apt-get update && apt-get install -y make git \
         && make build

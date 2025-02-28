@@ -15,3 +15,7 @@ db = 0
 addresses = ["http://localhost:9200"]
 api_key = "ZWF4WDM1UUIxbWFmQVM1d0d6dDg6V290Q21saG1Rb3k3d1V2am5aaWVhQQ=="
 indices = "mall"
+
+[services]
+admin_service = "localhost:50010"
+order_service = "localhost:50020"

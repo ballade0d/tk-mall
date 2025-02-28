@@ -87,3 +87,7 @@ func NewData(conf *config.Config) (*Data, error) {
 		es:   es,
 	}, nil
 }
+
+func (d *Data) GetConfig() *config.Config {
+	return d.conf
+}

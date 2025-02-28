@@ -7,5 +7,5 @@ spec:
     app: mall-admin
   ports:
     - port: 50051
-      targetPort: 50051
+      targetPort: 50010
   clusterIP: None
