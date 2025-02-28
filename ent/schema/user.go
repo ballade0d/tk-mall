@@ -17,6 +17,7 @@ func (User) Fields() []ent.Field {
 		field.Int("id"),
 		field.String("name"),
 		field.String("email"),
+		field.Enum("role").Values("admin", "user"),
 	}
 }
 

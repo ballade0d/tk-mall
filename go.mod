@@ -21,6 +21,8 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.6.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -29,6 +31,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
+	github.com/redis/go-redis/v9 v9.7.1 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect

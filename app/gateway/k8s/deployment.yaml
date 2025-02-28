@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mall-gateway
+spec:
+  replicas: 1  # 设置 Pod 的副本数
+  selector:
+    matchLabels:
+      app: mall-gateway
+  template:
+    metadata:
+      labels:
+        app: mall-gateway
+    spec:
+      containers:
+        - name: mall-gateway
+          image: gateway-service:0.0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080

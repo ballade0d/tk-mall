@@ -16,6 +16,9 @@ service ItemService {
   rpc EditItem(EditItemRequest) returns (EditItemResponse) {
     option (google.api.http) = {put: "/v1/item"};
   }
+  rpc AddStock(AddStockRequest) returns (AddStockResponse) {
+    option (google.api.http) = {post: "/v1/item/stock"};
+  }
   rpc GetItem(GetItemRequest) returns (GetItemResponse) {
     option (google.api.http) = {get: "/v1/item/{id}"};
   }
@@ -28,7 +31,6 @@ message CreateItemRequest {
   string name = 1;
   string description = 2;
   float price = 3;
-  int64 stock = 4;
 }
 
 message CreateItemResponse {
@@ -48,10 +50,18 @@ message EditItemRequest {
   string name = 2;
   string description = 3;
   float price = 4;
-  int64 stock = 5;
 }
 
 message EditItemResponse {
+  Item item = 1;
+}
+
+message AddStockRequest {
+  int64 id = 1;
+  int64 stock = 2;
+}
+
+message AddStockResponse {
   Item item = 1;
 }
 

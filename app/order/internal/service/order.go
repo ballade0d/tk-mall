@@ -20,3 +20,11 @@ func NewOrderService(orderRepo data.OrderRepo) *OrderService {
 func (s *OrderService) CreateOrder(ctx context.Context, req *v2.CreateOrderRequest) (*v2.CreateOrderResponse, error) {
 	return nil, nil
 }
+
+func (s *OrderService) GetOrderList(ctx context.Context, req *v2.GetOrderListRequest) (*v2.GetOrderListResponse, error) {
+	return nil, nil
+}
+
+func (s *OrderService) GetOrder(ctx context.Context, req *v2.GetOrderRequest) (*v2.GetOrderResponse, error) {
+	return nil, nil
+}

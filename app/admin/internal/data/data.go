@@ -8,6 +8,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/wire"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"mall/app/admin/internal/config"
 	"mall/ent"
@@ -18,10 +19,12 @@ var ProviderSet = wire.NewSet(NewData, NewItemRepo, NewPasswordRepo)
 type Data struct {
 	conf *config.Config
 	db   *ent.Client
+	rdb  *redis.Client
 	es   *elasticsearch.TypedClient
 }
 
 func NewData(conf *config.Config) (*Data, error) {
+	// Open the database connection
 	drv, err := sql.Open(
 		conf.Database.Driver, conf.Database.Source,
 	)
@@ -34,6 +37,19 @@ func NewData(conf *config.Config) (*Data, error) {
 		log.Fatal(err)
 		return nil, err
 	}
+
+	// Open the redis connection
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     conf.Redis.Addr,
+		Password: conf.Redis.Password,
+		DB:       conf.Redis.Database,
+	})
+	if _, err := rdb.Ping(context.Background()).Result(); err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	// Open the elasticsearch connection
 	cfg := elasticsearch.Config{
 		Addresses: conf.ElasticSearch.Addresses,
 		APIKey:    conf.ElasticSearch.APIKey,
@@ -67,6 +83,7 @@ func NewData(conf *config.Config) (*Data, error) {
 	return &Data{
 		conf: conf,
 		db:   db,
+		rdb:  rdb,
 		es:   es,
 	}, nil
 }

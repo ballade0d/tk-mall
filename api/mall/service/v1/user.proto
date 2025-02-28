@@ -8,7 +8,7 @@ option go_package = "api/mall/service/v1";
 
 service UserService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
-    option (google.api.http) = {get: "/v1/user/{id}"};
+    option (google.api.http) = {get: "/v1/user"};
   }
   rpc Register(RegisterRequest) returns (RegisterResponse) {
     option (google.api.http) = {
@@ -31,7 +31,6 @@ service UserService {
 }
 
 message GetUserRequest {
-  int64 id = 1;
 }
 
 message GetUserResponse {

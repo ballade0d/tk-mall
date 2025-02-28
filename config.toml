@@ -4,9 +4,18 @@ port = 8080
 
 [database]
 driver = "mysql"
-source = "root:passw0rd@tcp(localhost:3306)/mall"
+source = "root:passw0rd@tcp(mysql-service:3306)/mall"
+
+[redis]
+addr = "redis-service:6379"
+password = ""
+db = 0
 
 [elasticsearch]
-addresses = ["http://localhost:9200"]
+addresses = ["http://elasticsearch:9200"]
 api_key = "ZWF4WDM1UUIxbWFmQVM1d0d6dDg6V290Q21saG1Rb3k3d1V2am5aaWVhQQ=="
 indices = "mall"
+
+[services]
+admin_service = "http://admin-service.default.svc.cluster.local"
+order_service = "http://order-service.default.svc.cluster.local"

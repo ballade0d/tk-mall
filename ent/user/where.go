@@ -194,6 +194,26 @@ func EmailContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldEmail, v))
 }
 
+// RoleEQ applies the EQ predicate on the "role" field.
+func RoleEQ(v Role) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldRole, v))
+}
+
+// RoleNEQ applies the NEQ predicate on the "role" field.
+func RoleNEQ(v Role) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldRole, v))
+}
+
+// RoleIn applies the In predicate on the "role" field.
+func RoleIn(vs ...Role) predicate.User {
+	return predicate.User(sql.FieldIn(FieldRole, vs...))
+}
+
+// RoleNotIn applies the NotIn predicate on the "role" field.
+func RoleNotIn(vs ...Role) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldRole, vs...))
+}
+
 // HasPassword applies the HasEdge predicate on the "password" edge.
 func HasPassword() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

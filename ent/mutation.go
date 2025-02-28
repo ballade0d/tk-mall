@@ -1265,6 +1265,7 @@ type UserMutation struct {
 	id              *int
 	name            *string
 	email           *string
+	role            *user.Role
 	clearedFields   map[string]struct{}
 	password        map[int]struct{}
 	removedpassword map[int]struct{}
@@ -1450,6 +1451,42 @@ func (m *UserMutation) ResetEmail() {
 	m.email = nil
 }
 
+// SetRole sets the "role" field.
+func (m *UserMutation) SetRole(u user.Role) {
+	m.role = &u
+}
+
+// Role returns the value of the "role" field in the mutation.
+func (m *UserMutation) Role() (r user.Role, exists bool) {
+	v := m.role
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRole returns the old "role" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldRole(ctx context.Context) (v user.Role, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRole is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRole requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRole: %w", err)
+	}
+	return oldValue.Role, nil
+}
+
+// ResetRole resets all changes to the "role" field.
+func (m *UserMutation) ResetRole() {
+	m.role = nil
+}
+
 // AddPasswordIDs adds the "password" edge to the Password entity by ids.
 func (m *UserMutation) AddPasswordIDs(ids ...int) {
 	if m.password == nil {
@@ -1538,12 +1575,15 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, user.FieldName)
 	}
 	if m.email != nil {
 		fields = append(fields, user.FieldEmail)
+	}
+	if m.role != nil {
+		fields = append(fields, user.FieldRole)
 	}
 	return fields
 }
@@ -1557,6 +1597,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case user.FieldEmail:
 		return m.Email()
+	case user.FieldRole:
+		return m.Role()
 	}
 	return nil, false
 }
@@ -1570,6 +1612,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case user.FieldEmail:
 		return m.OldEmail(ctx)
+	case user.FieldRole:
+		return m.OldRole(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -1592,6 +1636,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEmail(v)
+		return nil
+	case user.FieldRole:
+		v, ok := value.(user.Role)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRole(v)
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
@@ -1647,6 +1698,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldEmail:
 		m.ResetEmail()
+		return nil
+	case user.FieldRole:
+		m.ResetRole()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

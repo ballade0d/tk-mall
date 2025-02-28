@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.17.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: xpack.security.enabled
+              value: "false"
+            - name: xpack.security.http.ssl.enabled
+              value: "false"
+            - name: discovery.type
+              value: "single-node"
+          ports:
+            - containerPort: 9200  # Elasticsearch 默认端口
+            - containerPort: 9300  # 用于节点间通信的端口
+          volumeMounts:
+            - name: elasticsearch-data
+              mountPath: /usr/share/elasticsearch/data  # 持久化数据路径
+      volumes:
+        - name: elasticsearch-data
+          emptyDir: {}  # 临时存储，生产环境应该使用 PersistentVolume

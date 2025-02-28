@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mall-admin
+spec:
+  replicas: 1  # 设置 Pod 的副本数
+  selector:
+    matchLabels:
+      app: mall-admin
+  template:
+    metadata:
+      labels:
+        app: mall-admin
+    spec:
+      containers:
+        - name: mall-admin
+          image: admin-service:0.0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50051  # gRPC 服务的端口

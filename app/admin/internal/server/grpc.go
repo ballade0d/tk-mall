@@ -23,6 +23,5 @@ func NewGRPCServer(service *service.ItemService) *grpc.Server {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	}()
-	NewHTTPServer()
 	return grpcServer
 }

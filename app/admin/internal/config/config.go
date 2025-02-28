@@ -16,6 +16,12 @@ type DatabaseConfig struct {
 	Source string `toml:"source"`
 }
 
+type RedisConfig struct {
+	Addr     string `toml:"addr"`
+	Password string `toml:"password"`
+	Database int    `toml:"database"`
+}
+
 type ElasticSearchConfig struct {
 	Addresses []string `toml:"addresses"`
 	APIKey    string   `toml:"api_key"`
@@ -25,6 +31,7 @@ type ElasticSearchConfig struct {
 type Config struct {
 	Server        ServerConfig        `toml:"server"`
 	Database      DatabaseConfig      `toml:"database"`
+	Redis         RedisConfig         `toml:"redis"`
 	ElasticSearch ElasticSearchConfig `toml:"elasticsearch"`
 }
 
