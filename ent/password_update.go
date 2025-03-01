@@ -113,7 +113,7 @@ func (pu *PasswordUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
 			Table:   password.UserTable,
 			Columns: []string{password.UserColumn},
@@ -126,7 +126,7 @@ func (pu *PasswordUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := pu.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
 			Table:   password.UserTable,
 			Columns: []string{password.UserColumn},
@@ -275,7 +275,7 @@ func (puo *PasswordUpdateOne) sqlSave(ctx context.Context) (_node *Password, err
 	}
 	if puo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
 			Table:   password.UserTable,
 			Columns: []string{password.UserColumn},
@@ -288,7 +288,7 @@ func (puo *PasswordUpdateOne) sqlSave(ctx context.Context) (_node *Password, err
 	}
 	if nodes := puo.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
 			Table:   password.UserTable,
 			Columns: []string{password.UserColumn},

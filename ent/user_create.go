@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mall/ent/cart"
 	"mall/ent/password"
 	"mall/ent/user"
 
@@ -44,19 +45,42 @@ func (uc *UserCreate) SetID(i int) *UserCreate {
 	return uc
 }
 
-// AddPasswordIDs adds the "password" edge to the Password entity by IDs.
-func (uc *UserCreate) AddPasswordIDs(ids ...int) *UserCreate {
-	uc.mutation.AddPasswordIDs(ids...)
+// SetPasswordID sets the "password" edge to the Password entity by ID.
+func (uc *UserCreate) SetPasswordID(id int) *UserCreate {
+	uc.mutation.SetPasswordID(id)
 	return uc
 }
 
-// AddPassword adds the "password" edges to the Password entity.
-func (uc *UserCreate) AddPassword(p ...*Password) *UserCreate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// SetNillablePasswordID sets the "password" edge to the Password entity by ID if the given value is not nil.
+func (uc *UserCreate) SetNillablePasswordID(id *int) *UserCreate {
+	if id != nil {
+		uc = uc.SetPasswordID(*id)
 	}
-	return uc.AddPasswordIDs(ids...)
+	return uc
+}
+
+// SetPassword sets the "password" edge to the Password entity.
+func (uc *UserCreate) SetPassword(p *Password) *UserCreate {
+	return uc.SetPasswordID(p.ID)
+}
+
+// SetCartID sets the "cart" edge to the Cart entity by ID.
+func (uc *UserCreate) SetCartID(id int) *UserCreate {
+	uc.mutation.SetCartID(id)
+	return uc
+}
+
+// SetNillableCartID sets the "cart" edge to the Cart entity by ID if the given value is not nil.
+func (uc *UserCreate) SetNillableCartID(id *int) *UserCreate {
+	if id != nil {
+		uc = uc.SetCartID(*id)
+	}
+	return uc
+}
+
+// SetCart sets the "cart" edge to the Cart entity.
+func (uc *UserCreate) SetCart(c *Cart) *UserCreate {
+	return uc.SetCartID(c.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -153,13 +177,29 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	}
 	if nodes := uc.mutation.PasswordIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   user.PasswordTable,
 			Columns: []string{user.PasswordColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.CartIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.CartTable,
+			Columns: []string{user.CartColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cart.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

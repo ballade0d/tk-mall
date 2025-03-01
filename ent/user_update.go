@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mall/ent/cart"
 	"mall/ent/password"
 	"mall/ent/predicate"
 	"mall/ent/user"
@@ -70,19 +71,42 @@ func (uu *UserUpdate) SetNillableRole(u *user.Role) *UserUpdate {
 	return uu
 }
 
-// AddPasswordIDs adds the "password" edge to the Password entity by IDs.
-func (uu *UserUpdate) AddPasswordIDs(ids ...int) *UserUpdate {
-	uu.mutation.AddPasswordIDs(ids...)
+// SetPasswordID sets the "password" edge to the Password entity by ID.
+func (uu *UserUpdate) SetPasswordID(id int) *UserUpdate {
+	uu.mutation.SetPasswordID(id)
 	return uu
 }
 
-// AddPassword adds the "password" edges to the Password entity.
-func (uu *UserUpdate) AddPassword(p ...*Password) *UserUpdate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// SetNillablePasswordID sets the "password" edge to the Password entity by ID if the given value is not nil.
+func (uu *UserUpdate) SetNillablePasswordID(id *int) *UserUpdate {
+	if id != nil {
+		uu = uu.SetPasswordID(*id)
 	}
-	return uu.AddPasswordIDs(ids...)
+	return uu
+}
+
+// SetPassword sets the "password" edge to the Password entity.
+func (uu *UserUpdate) SetPassword(p *Password) *UserUpdate {
+	return uu.SetPasswordID(p.ID)
+}
+
+// SetCartID sets the "cart" edge to the Cart entity by ID.
+func (uu *UserUpdate) SetCartID(id int) *UserUpdate {
+	uu.mutation.SetCartID(id)
+	return uu
+}
+
+// SetNillableCartID sets the "cart" edge to the Cart entity by ID if the given value is not nil.
+func (uu *UserUpdate) SetNillableCartID(id *int) *UserUpdate {
+	if id != nil {
+		uu = uu.SetCartID(*id)
+	}
+	return uu
+}
+
+// SetCart sets the "cart" edge to the Cart entity.
+func (uu *UserUpdate) SetCart(c *Cart) *UserUpdate {
+	return uu.SetCartID(c.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -90,25 +114,16 @@ func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
 }
 
-// ClearPassword clears all "password" edges to the Password entity.
+// ClearPassword clears the "password" edge to the Password entity.
 func (uu *UserUpdate) ClearPassword() *UserUpdate {
 	uu.mutation.ClearPassword()
 	return uu
 }
 
-// RemovePasswordIDs removes the "password" edge to Password entities by IDs.
-func (uu *UserUpdate) RemovePasswordIDs(ids ...int) *UserUpdate {
-	uu.mutation.RemovePasswordIDs(ids...)
+// ClearCart clears the "cart" edge to the Cart entity.
+func (uu *UserUpdate) ClearCart() *UserUpdate {
+	uu.mutation.ClearCart()
 	return uu
-}
-
-// RemovePassword removes "password" edges to Password entities.
-func (uu *UserUpdate) RemovePassword(p ...*Password) *UserUpdate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return uu.RemovePasswordIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -171,7 +186,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if uu.mutation.PasswordCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   user.PasswordTable,
 			Columns: []string{user.PasswordColumn},
@@ -182,9 +197,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := uu.mutation.RemovedPasswordIDs(); len(nodes) > 0 && !uu.mutation.PasswordCleared() {
+	if nodes := uu.mutation.PasswordIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   user.PasswordTable,
 			Columns: []string{user.PasswordColumn},
@@ -196,17 +211,30 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uu.mutation.PasswordIDs(); len(nodes) > 0 {
+	if uu.mutation.CartCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   user.PasswordTable,
-			Columns: []string{user.PasswordColumn},
+			Table:   user.CartTable,
+			Columns: []string{user.CartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(cart.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.CartIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.CartTable,
+			Columns: []string{user.CartColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cart.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -276,19 +304,42 @@ func (uuo *UserUpdateOne) SetNillableRole(u *user.Role) *UserUpdateOne {
 	return uuo
 }
 
-// AddPasswordIDs adds the "password" edge to the Password entity by IDs.
-func (uuo *UserUpdateOne) AddPasswordIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.AddPasswordIDs(ids...)
+// SetPasswordID sets the "password" edge to the Password entity by ID.
+func (uuo *UserUpdateOne) SetPasswordID(id int) *UserUpdateOne {
+	uuo.mutation.SetPasswordID(id)
 	return uuo
 }
 
-// AddPassword adds the "password" edges to the Password entity.
-func (uuo *UserUpdateOne) AddPassword(p ...*Password) *UserUpdateOne {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
+// SetNillablePasswordID sets the "password" edge to the Password entity by ID if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillablePasswordID(id *int) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetPasswordID(*id)
 	}
-	return uuo.AddPasswordIDs(ids...)
+	return uuo
+}
+
+// SetPassword sets the "password" edge to the Password entity.
+func (uuo *UserUpdateOne) SetPassword(p *Password) *UserUpdateOne {
+	return uuo.SetPasswordID(p.ID)
+}
+
+// SetCartID sets the "cart" edge to the Cart entity by ID.
+func (uuo *UserUpdateOne) SetCartID(id int) *UserUpdateOne {
+	uuo.mutation.SetCartID(id)
+	return uuo
+}
+
+// SetNillableCartID sets the "cart" edge to the Cart entity by ID if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableCartID(id *int) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetCartID(*id)
+	}
+	return uuo
+}
+
+// SetCart sets the "cart" edge to the Cart entity.
+func (uuo *UserUpdateOne) SetCart(c *Cart) *UserUpdateOne {
+	return uuo.SetCartID(c.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -296,25 +347,16 @@ func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
 }
 
-// ClearPassword clears all "password" edges to the Password entity.
+// ClearPassword clears the "password" edge to the Password entity.
 func (uuo *UserUpdateOne) ClearPassword() *UserUpdateOne {
 	uuo.mutation.ClearPassword()
 	return uuo
 }
 
-// RemovePasswordIDs removes the "password" edge to Password entities by IDs.
-func (uuo *UserUpdateOne) RemovePasswordIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.RemovePasswordIDs(ids...)
+// ClearCart clears the "cart" edge to the Cart entity.
+func (uuo *UserUpdateOne) ClearCart() *UserUpdateOne {
+	uuo.mutation.ClearCart()
 	return uuo
-}
-
-// RemovePassword removes "password" edges to Password entities.
-func (uuo *UserUpdateOne) RemovePassword(p ...*Password) *UserUpdateOne {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return uuo.RemovePasswordIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -407,7 +449,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if uuo.mutation.PasswordCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   user.PasswordTable,
 			Columns: []string{user.PasswordColumn},
@@ -418,9 +460,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := uuo.mutation.RemovedPasswordIDs(); len(nodes) > 0 && !uuo.mutation.PasswordCleared() {
+	if nodes := uuo.mutation.PasswordIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   user.PasswordTable,
 			Columns: []string{user.PasswordColumn},
@@ -432,17 +474,30 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := uuo.mutation.PasswordIDs(); len(nodes) > 0 {
+	if uuo.mutation.CartCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   user.PasswordTable,
-			Columns: []string{user.PasswordColumn},
+			Table:   user.CartTable,
+			Columns: []string{user.CartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(password.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(cart.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.CartIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.CartTable,
+			Columns: []string{user.CartColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cart.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

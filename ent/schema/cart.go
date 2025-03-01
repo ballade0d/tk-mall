@@ -1,6 +1,9 @@
 package schema
 
-import "entgo.io/ent"
+import (
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+)
 
 // Cart holds the schema definition for the Cart entity.
 type Cart struct {
@@ -14,5 +17,8 @@ func (Cart) Fields() []ent.Field {
 
 // Edges of the Cart.
 func (Cart) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("user", User.Type).Ref("cart").Unique().Required(),
+		edge.To("items", CartItem.Type),
+	}
 }

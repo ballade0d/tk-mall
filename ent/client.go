@@ -12,6 +12,7 @@ import (
 	"mall/ent/migrate"
 
 	"mall/ent/cart"
+	"mall/ent/cartitem"
 	"mall/ent/item"
 	"mall/ent/password"
 	"mall/ent/user"
@@ -29,6 +30,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Cart is the client for interacting with the Cart builders.
 	Cart *CartClient
+	// CartItem is the client for interacting with the CartItem builders.
+	CartItem *CartItemClient
 	// Item is the client for interacting with the Item builders.
 	Item *ItemClient
 	// Password is the client for interacting with the Password builders.
@@ -47,6 +50,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Cart = NewCartClient(c.config)
+	c.CartItem = NewCartItemClient(c.config)
 	c.Item = NewItemClient(c.config)
 	c.Password = NewPasswordClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -143,6 +147,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:      ctx,
 		config:   cfg,
 		Cart:     NewCartClient(cfg),
+		CartItem: NewCartItemClient(cfg),
 		Item:     NewItemClient(cfg),
 		Password: NewPasswordClient(cfg),
 		User:     NewUserClient(cfg),
@@ -166,6 +171,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:      ctx,
 		config:   cfg,
 		Cart:     NewCartClient(cfg),
+		CartItem: NewCartItemClient(cfg),
 		Item:     NewItemClient(cfg),
 		Password: NewPasswordClient(cfg),
 		User:     NewUserClient(cfg),
@@ -198,6 +204,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Cart.Use(hooks...)
+	c.CartItem.Use(hooks...)
 	c.Item.Use(hooks...)
 	c.Password.Use(hooks...)
 	c.User.Use(hooks...)
@@ -207,6 +214,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Cart.Intercept(interceptors...)
+	c.CartItem.Intercept(interceptors...)
 	c.Item.Intercept(interceptors...)
 	c.Password.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
@@ -217,6 +225,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *CartMutation:
 		return c.Cart.mutate(ctx, m)
+	case *CartItemMutation:
+		return c.CartItem.mutate(ctx, m)
 	case *ItemMutation:
 		return c.Item.mutate(ctx, m)
 	case *PasswordMutation:
@@ -336,6 +346,38 @@ func (c *CartClient) GetX(ctx context.Context, id int) *Cart {
 	return obj
 }
 
+// QueryUser queries the user edge of a Cart.
+func (c *CartClient) QueryUser(ca *Cart) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ca.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cart.Table, cart.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, cart.UserTable, cart.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(ca.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryItems queries the items edge of a Cart.
+func (c *CartClient) QueryItems(ca *Cart) *CartItemQuery {
+	query := (&CartItemClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ca.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cart.Table, cart.FieldID, id),
+			sqlgraph.To(cartitem.Table, cartitem.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, cart.ItemsTable, cart.ItemsColumn),
+		)
+		fromV = sqlgraph.Neighbors(ca.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CartClient) Hooks() []Hook {
 	return c.hooks.Cart
@@ -358,6 +400,171 @@ func (c *CartClient) mutate(ctx context.Context, m *CartMutation) (Value, error)
 		return (&CartDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Cart mutation op: %q", m.Op())
+	}
+}
+
+// CartItemClient is a client for the CartItem schema.
+type CartItemClient struct {
+	config
+}
+
+// NewCartItemClient returns a client for the CartItem from the given config.
+func NewCartItemClient(c config) *CartItemClient {
+	return &CartItemClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cartitem.Hooks(f(g(h())))`.
+func (c *CartItemClient) Use(hooks ...Hook) {
+	c.hooks.CartItem = append(c.hooks.CartItem, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cartitem.Intercept(f(g(h())))`.
+func (c *CartItemClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CartItem = append(c.inters.CartItem, interceptors...)
+}
+
+// Create returns a builder for creating a CartItem entity.
+func (c *CartItemClient) Create() *CartItemCreate {
+	mutation := newCartItemMutation(c.config, OpCreate)
+	return &CartItemCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CartItem entities.
+func (c *CartItemClient) CreateBulk(builders ...*CartItemCreate) *CartItemCreateBulk {
+	return &CartItemCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CartItemClient) MapCreateBulk(slice any, setFunc func(*CartItemCreate, int)) *CartItemCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CartItemCreateBulk{err: fmt.Errorf("calling to CartItemClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CartItemCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CartItemCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CartItem.
+func (c *CartItemClient) Update() *CartItemUpdate {
+	mutation := newCartItemMutation(c.config, OpUpdate)
+	return &CartItemUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CartItemClient) UpdateOne(ci *CartItem) *CartItemUpdateOne {
+	mutation := newCartItemMutation(c.config, OpUpdateOne, withCartItem(ci))
+	return &CartItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CartItemClient) UpdateOneID(id int) *CartItemUpdateOne {
+	mutation := newCartItemMutation(c.config, OpUpdateOne, withCartItemID(id))
+	return &CartItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CartItem.
+func (c *CartItemClient) Delete() *CartItemDelete {
+	mutation := newCartItemMutation(c.config, OpDelete)
+	return &CartItemDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CartItemClient) DeleteOne(ci *CartItem) *CartItemDeleteOne {
+	return c.DeleteOneID(ci.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CartItemClient) DeleteOneID(id int) *CartItemDeleteOne {
+	builder := c.Delete().Where(cartitem.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CartItemDeleteOne{builder}
+}
+
+// Query returns a query builder for CartItem.
+func (c *CartItemClient) Query() *CartItemQuery {
+	return &CartItemQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCartItem},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CartItem entity by its id.
+func (c *CartItemClient) Get(ctx context.Context, id int) (*CartItem, error) {
+	return c.Query().Where(cartitem.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CartItemClient) GetX(ctx context.Context, id int) *CartItem {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCart queries the cart edge of a CartItem.
+func (c *CartItemClient) QueryCart(ci *CartItem) *CartQuery {
+	query := (&CartClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ci.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cartitem.Table, cartitem.FieldID, id),
+			sqlgraph.To(cart.Table, cart.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, cartitem.CartTable, cartitem.CartColumn),
+		)
+		fromV = sqlgraph.Neighbors(ci.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryItem queries the item edge of a CartItem.
+func (c *CartItemClient) QueryItem(ci *CartItem) *ItemQuery {
+	query := (&ItemClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ci.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cartitem.Table, cartitem.FieldID, id),
+			sqlgraph.To(item.Table, item.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, cartitem.ItemTable, cartitem.ItemColumn),
+		)
+		fromV = sqlgraph.Neighbors(ci.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CartItemClient) Hooks() []Hook {
+	return c.hooks.CartItem
+}
+
+// Interceptors returns the client interceptors.
+func (c *CartItemClient) Interceptors() []Interceptor {
+	return c.inters.CartItem
+}
+
+func (c *CartItemClient) mutate(ctx context.Context, m *CartItemMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CartItemCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CartItemUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CartItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CartItemDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CartItem mutation op: %q", m.Op())
 	}
 }
 
@@ -610,7 +817,7 @@ func (c *PasswordClient) QueryUser(pa *Password) *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(password.Table, password.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, password.UserTable, password.UserColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, password.UserTable, password.UserColumn),
 		)
 		fromV = sqlgraph.Neighbors(pa.driver.Dialect(), step)
 		return fromV, nil
@@ -759,7 +966,23 @@ func (c *UserClient) QueryPassword(u *User) *PasswordQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(password.Table, password.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.PasswordTable, user.PasswordColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.PasswordTable, user.PasswordColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCart queries the cart edge of a User.
+func (c *UserClient) QueryCart(u *User) *CartQuery {
+	query := (&CartClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(cart.Table, cart.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.CartTable, user.CartColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
@@ -795,9 +1018,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Cart, Item, Password, User []ent.Hook
+		Cart, CartItem, Item, Password, User []ent.Hook
 	}
 	inters struct {
-		Cart, Item, Password, User []ent.Interceptor
+		Cart, CartItem, Item, Password, User []ent.Interceptor
 	}
 )

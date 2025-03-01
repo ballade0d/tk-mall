@@ -4,6 +4,8 @@ package ent
 
 import (
 	"fmt"
+	"mall/ent/cart"
+	"mall/ent/password"
 	"mall/ent/user"
 	"strings"
 
@@ -31,19 +33,34 @@ type User struct {
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
 	// Password holds the value of the password edge.
-	Password []*Password `json:"password,omitempty"`
+	Password *Password `json:"password,omitempty"`
+	// Cart holds the value of the cart edge.
+	Cart *Cart `json:"cart,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // PasswordOrErr returns the Password value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) PasswordOrErr() ([]*Password, error) {
-	if e.loadedTypes[0] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) PasswordOrErr() (*Password, error) {
+	if e.Password != nil {
 		return e.Password, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: password.Label}
 	}
 	return nil, &NotLoadedError{edge: "password"}
+}
+
+// CartOrErr returns the Cart value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) CartOrErr() (*Cart, error) {
+	if e.Cart != nil {
+		return e.Cart, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: cart.Label}
+	}
+	return nil, &NotLoadedError{edge: "cart"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -110,6 +127,11 @@ func (u *User) Value(name string) (ent.Value, error) {
 // QueryPassword queries the "password" edge of the User entity.
 func (u *User) QueryPassword() *PasswordQuery {
 	return NewUserClient(u.config).QueryPassword(u)
+}
+
+// QueryCart queries the "cart" edge of the User entity.
+func (u *User) QueryCart() *CartQuery {
+	return NewUserClient(u.config).QueryCart(u)
 }
 
 // Update returns a builder for updating this User.

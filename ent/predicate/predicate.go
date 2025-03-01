@@ -9,6 +9,9 @@ import (
 // Cart is the predicate function for cart builders.
 type Cart func(*sql.Selector)
 
+// CartItem is the predicate function for cartitem builders.
+type CartItem func(*sql.Selector)
+
 // Item is the predicate function for item builders.
 type Item func(*sql.Selector)
 

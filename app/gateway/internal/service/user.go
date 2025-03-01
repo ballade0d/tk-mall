@@ -5,8 +5,9 @@ import (
 	"errors"
 	v2 "mall/api/mall/service/v1"
 	"mall/app/gateway/internal/data"
-	"mall/app/gateway/internal/util"
+	u "mall/app/gateway/internal/util"
 	"mall/ent"
+	"mall/pkg/util"
 	"time"
 )
 
@@ -55,7 +56,7 @@ func (s *UserService) Login(ctx context.Context, req *v2.LoginRequest) (*v2.Logi
 	if err != nil {
 		return nil, err
 	}
-	if util.Verify(pwd.Password, req.Password) {
+	if u.Verify(pwd.Password, req.Password) {
 		return &v2.LoginResponse{
 			Token: &v2.Token{
 				Token:        token,
@@ -72,7 +73,7 @@ func (s *UserService) Register(ctx context.Context, req *v2.RegisterRequest) (*v
 	if !errors.As(err, &entErr) {
 		return nil, errors.New("user already exists")
 	}
-	encrypted, err := util.Encrypt(req.Password)
+	encrypted, err := u.Encrypt(req.Password)
 	if err != nil {
 		return nil, err
 	}

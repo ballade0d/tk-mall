@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Cart is the client for interacting with the Cart builders.
 	Cart *CartClient
+	// CartItem is the client for interacting with the CartItem builders.
+	CartItem *CartItemClient
 	// Item is the client for interacting with the Item builders.
 	Item *ItemClient
 	// Password is the client for interacting with the Password builders.
@@ -152,6 +154,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Cart = NewCartClient(tx.config)
+	tx.CartItem = NewCartItemClient(tx.config)
 	tx.Item = NewItemClient(tx.config)
 	tx.Password = NewPasswordClient(tx.config)
 	tx.User = NewUserClient(tx.config)

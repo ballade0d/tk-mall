@@ -4,8 +4,11 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mall/ent/cart"
+	"mall/ent/cartitem"
+	"mall/ent/user"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -16,6 +19,32 @@ type CartCreate struct {
 	config
 	mutation *CartMutation
 	hooks    []Hook
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (cc *CartCreate) SetUserID(id int) *CartCreate {
+	cc.mutation.SetUserID(id)
+	return cc
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (cc *CartCreate) SetUser(u *User) *CartCreate {
+	return cc.SetUserID(u.ID)
+}
+
+// AddItemIDs adds the "items" edge to the CartItem entity by IDs.
+func (cc *CartCreate) AddItemIDs(ids ...int) *CartCreate {
+	cc.mutation.AddItemIDs(ids...)
+	return cc
+}
+
+// AddItems adds the "items" edges to the CartItem entity.
+func (cc *CartCreate) AddItems(c ...*CartItem) *CartCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cc.AddItemIDs(ids...)
 }
 
 // Mutation returns the CartMutation object of the builder.
@@ -52,6 +81,9 @@ func (cc *CartCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cc *CartCreate) check() error {
+	if len(cc.mutation.UserIDs()) == 0 {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Cart.user"`)}
+	}
 	return nil
 }
 
@@ -78,6 +110,39 @@ func (cc *CartCreate) createSpec() (*Cart, *sqlgraph.CreateSpec) {
 		_node = &Cart{config: cc.config}
 		_spec = sqlgraph.NewCreateSpec(cart.Table, sqlgraph.NewFieldSpec(cart.FieldID, field.TypeInt))
 	)
+	if nodes := cc.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   cart.UserTable,
+			Columns: []string{cart.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_cart = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.ItemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   cart.ItemsTable,
+			Columns: []string{cart.ItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cartitem.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 

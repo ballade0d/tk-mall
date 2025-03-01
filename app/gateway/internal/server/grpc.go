@@ -8,7 +8,7 @@ import (
 	"log"
 	"mall/api/mall/service/v1"
 	"mall/app/gateway/internal/service"
-	"mall/app/gateway/internal/util"
+	"mall/pkg/util"
 	"net"
 	"slices"
 )

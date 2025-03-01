@@ -11,12 +11,48 @@ var (
 	// CartsColumns holds the columns for the "carts" table.
 	CartsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "user_cart", Type: field.TypeInt, Unique: true},
 	}
 	// CartsTable holds the schema information for the "carts" table.
 	CartsTable = &schema.Table{
 		Name:       "carts",
 		Columns:    CartsColumns,
 		PrimaryKey: []*schema.Column{CartsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "carts_users_cart",
+				Columns:    []*schema.Column{CartsColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// CartItemsColumns holds the columns for the "cart_items" table.
+	CartItemsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "quantity", Type: field.TypeInt, Default: 1},
+		{Name: "cart_items", Type: field.TypeInt},
+		{Name: "cart_item_item", Type: field.TypeInt},
+	}
+	// CartItemsTable holds the schema information for the "cart_items" table.
+	CartItemsTable = &schema.Table{
+		Name:       "cart_items",
+		Columns:    CartItemsColumns,
+		PrimaryKey: []*schema.Column{CartItemsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cart_items_carts_items",
+				Columns:    []*schema.Column{CartItemsColumns[2]},
+				RefColumns: []*schema.Column{CartsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "cart_items_items_item",
+				Columns:    []*schema.Column{CartItemsColumns[3]},
+				RefColumns: []*schema.Column{ItemsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// ItemsColumns holds the columns for the "items" table.
 	ItemsColumns = []*schema.Column{
@@ -36,7 +72,7 @@ var (
 	PasswordsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "password", Type: field.TypeString},
-		{Name: "user_password", Type: field.TypeInt, Nullable: true},
+		{Name: "user_password", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// PasswordsTable holds the schema information for the "passwords" table.
 	PasswordsTable = &schema.Table{
@@ -68,6 +104,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CartsTable,
+		CartItemsTable,
 		ItemsTable,
 		PasswordsTable,
 		UsersTable,
@@ -75,5 +112,8 @@ var (
 )
 
 func init() {
+	CartsTable.ForeignKeys[0].RefTable = UsersTable
+	CartItemsTable.ForeignKeys[0].RefTable = CartsTable
+	CartItemsTable.ForeignKeys[1].RefTable = ItemsTable
 	PasswordsTable.ForeignKeys[0].RefTable = UsersTable
 }

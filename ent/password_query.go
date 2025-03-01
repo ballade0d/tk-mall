@@ -75,7 +75,7 @@ func (pq *PasswordQuery) QueryUser() *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(password.Table, password.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, password.UserTable, password.UserColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, password.UserTable, password.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil

@@ -219,7 +219,7 @@ func HasPassword() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, PasswordTable, PasswordColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, PasswordTable, PasswordColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -229,6 +229,29 @@ func HasPassword() predicate.User {
 func HasPasswordWith(preds ...predicate.Password) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newPasswordStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCart applies the HasEdge predicate on the "cart" edge.
+func HasCart() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, CartTable, CartColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCartWith applies the HasEdge predicate on the "cart" edge with a given conditions (other predicates).
+func HasCartWith(preds ...predicate.Cart) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCartStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

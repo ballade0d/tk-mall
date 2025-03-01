@@ -55,22 +55,6 @@ func (s *ItemService) EditItem(ctx context.Context, req *pb.EditItemRequest) (*p
 	}, nil
 }
 
-func (s *ItemService) GetItem(ctx context.Context, req *pb.GetItemRequest) (*pb.GetItemResponse, error) {
-	item, err := s.itemRepo.FindItemByID(ctx, int(req.Id))
-	if err != nil {
-		return nil, err
-	}
-	return &pb.GetItemResponse{
-		Item: &pb.Item{
-			Id:          int64(item.ID),
-			Name:        item.Name,
-			Description: item.Description,
-			Price:       item.Price,
-			Stock:       int64(item.Stock),
-		},
-	}, nil
-}
-
 func (s *ItemService) AddStock(ctx context.Context, req *pb.AddStockRequest) (*pb.AddStockResponse, error) {
 	// TODO: Lock item
 	item, err := s.itemRepo.AddStock(ctx, int(req.Id), int(req.Stock))
@@ -86,21 +70,4 @@ func (s *ItemService) AddStock(ctx context.Context, req *pb.AddStockRequest) (*p
 			Stock:       int64(item.Stock),
 		},
 	}, nil
-}
-
-func (s *ItemService) SearchItems(ctx context.Context, req *pb.SearchItemsRequest) (*pb.SearchItemsResponse, error) {
-	items, err := s.itemRepo.SearchItems(ctx, req.Query)
-	if err != nil {
-		return nil, err
-	}
-	res := &pb.SearchItemsResponse{}
-	for _, item := range items {
-		res.Items = append(res.Items, &pb.Item{
-			Id:          int64(item.ID),
-			Name:        item.Name,
-			Description: item.Description,
-			Price:       item.Price,
-		})
-	}
-	return res, nil
 }

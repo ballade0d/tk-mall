@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"mall/ent/cart"
+	"mall/ent/cartitem"
 	"mall/ent/item"
 	"mall/ent/password"
 	"mall/ent/user"
@@ -77,6 +78,7 @@ func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			cart.Table:     cart.ValidColumn,
+			cartitem.Table: cartitem.ValidColumn,
 			item.Table:     item.ValidColumn,
 			password.Table: password.ValidColumn,
 			user.Table:     user.ValidColumn,

@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"mall/ent/cart"
+	"mall/ent/user"
 	"strings"
 
 	"entgo.io/ent"
@@ -15,8 +16,43 @@ import (
 type Cart struct {
 	config
 	// ID of the ent.
-	ID           int `json:"id,omitempty"`
+	ID int `json:"id,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the CartQuery when eager-loading is set.
+	Edges        CartEdges `json:"edges"`
+	user_cart    *int
 	selectValues sql.SelectValues
+}
+
+// CartEdges holds the relations/edges for other nodes in the graph.
+type CartEdges struct {
+	// User holds the value of the user edge.
+	User *User `json:"user,omitempty"`
+	// Items holds the value of the items edge.
+	Items []*CartItem `json:"items,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// UserOrErr returns the User value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CartEdges) UserOrErr() (*User, error) {
+	if e.User != nil {
+		return e.User, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
+	}
+	return nil, &NotLoadedError{edge: "user"}
+}
+
+// ItemsOrErr returns the Items value or an error if the edge
+// was not loaded in eager-loading.
+func (e CartEdges) ItemsOrErr() ([]*CartItem, error) {
+	if e.loadedTypes[1] {
+		return e.Items, nil
+	}
+	return nil, &NotLoadedError{edge: "items"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -25,6 +61,8 @@ func (*Cart) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case cart.FieldID:
+			values[i] = new(sql.NullInt64)
+		case cart.ForeignKeys[0]: // user_cart
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -47,6 +85,13 @@ func (c *Cart) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			c.ID = int(value.Int64)
+		case cart.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field user_cart", value)
+			} else if value.Valid {
+				c.user_cart = new(int)
+				*c.user_cart = int(value.Int64)
+			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
 		}
@@ -58,6 +103,16 @@ func (c *Cart) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (c *Cart) Value(name string) (ent.Value, error) {
 	return c.selectValues.Get(name)
+}
+
+// QueryUser queries the "user" edge of the Cart entity.
+func (c *Cart) QueryUser() *UserQuery {
+	return NewCartClient(c.config).QueryUser(c)
+}
+
+// QueryItems queries the "items" edge of the Cart entity.
+func (c *Cart) QueryItems() *CartItemQuery {
+	return NewCartClient(c.config).QueryItems(c)
 }
 
 // Update returns a builder for updating this Cart.

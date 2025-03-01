@@ -22,6 +22,8 @@ const (
 	FieldRole = "role"
 	// EdgePassword holds the string denoting the password edge name in mutations.
 	EdgePassword = "password"
+	// EdgeCart holds the string denoting the cart edge name in mutations.
+	EdgeCart = "cart"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PasswordTable is the table that holds the password relation/edge.
@@ -31,6 +33,13 @@ const (
 	PasswordInverseTable = "passwords"
 	// PasswordColumn is the table column denoting the password relation/edge.
 	PasswordColumn = "user_password"
+	// CartTable is the table that holds the cart relation/edge.
+	CartTable = "carts"
+	// CartInverseTable is the table name for the Cart entity.
+	// It exists in this package in order to avoid circular dependency with the "cart" package.
+	CartInverseTable = "carts"
+	// CartColumn is the table column denoting the cart relation/edge.
+	CartColumn = "user_cart"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -97,23 +106,30 @@ func ByRole(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRole, opts...).ToFunc()
 }
 
-// ByPasswordCount orders the results by password count.
-func ByPasswordCount(opts ...sql.OrderTermOption) OrderOption {
+// ByPasswordField orders the results by password field.
+func ByPasswordField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newPasswordStep(), opts...)
+		sqlgraph.OrderByNeighborTerms(s, newPasswordStep(), sql.OrderByField(field, opts...))
 	}
 }
 
-// ByPassword orders the results by password terms.
-func ByPassword(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByCartField orders the results by cart field.
+func ByCartField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPasswordStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newCartStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newPasswordStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PasswordInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, PasswordTable, PasswordColumn),
+		sqlgraph.Edge(sqlgraph.O2O, false, PasswordTable, PasswordColumn),
+	)
+}
+func newCartStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CartInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, CartTable, CartColumn),
 	)
 }

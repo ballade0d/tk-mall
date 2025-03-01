@@ -31,7 +31,7 @@ func (r *UserRepo) FindUserByEmail(ctx context.Context, email string) (*ent.User
 }
 
 func (r *UserRepo) CreateUser(ctx context.Context, u *ent.User, p *ent.Password) (*ent.User, error) {
-	u, err := r.data.db.User.Create().SetName(u.Name).SetEmail(u.Email).SetRole(u.Role).AddPassword(p).Save(ctx)
+	u, err := r.data.db.User.Create().SetName(u.Name).SetEmail(u.Email).SetRole(u.Role).SetPassword(p).Save(ctx)
 	if err != nil {
 		return nil, err
 	}

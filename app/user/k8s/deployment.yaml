@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mall-order
+spec:
+  replicas: 1  # 设置 Pod 的副本数
+  selector:
+    matchLabels:
+      app: mall-order
+  template:
+    metadata:
+      labels:
+        app: mall-order
+    spec:
+      containers:
+        - name: mall-order
+          image: order-service:0.0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50020  # gRPC 服务的端口
