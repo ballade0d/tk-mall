@@ -30,19 +30,43 @@ func (ou *OrderUpdate) Where(ps ...predicate.Order) *OrderUpdate {
 	return ou
 }
 
-// AddUserIDs adds the "user" edge to the User entity by IDs.
-func (ou *OrderUpdate) AddUserIDs(ids ...int) *OrderUpdate {
-	ou.mutation.AddUserIDs(ids...)
+// SetAddress sets the "address" field.
+func (ou *OrderUpdate) SetAddress(s string) *OrderUpdate {
+	ou.mutation.SetAddress(s)
 	return ou
 }
 
-// AddUser adds the "user" edges to the User entity.
-func (ou *OrderUpdate) AddUser(u ...*User) *OrderUpdate {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (ou *OrderUpdate) SetNillableAddress(s *string) *OrderUpdate {
+	if s != nil {
+		ou.SetAddress(*s)
 	}
-	return ou.AddUserIDs(ids...)
+	return ou
+}
+
+// SetStatus sets the "status" field.
+func (ou *OrderUpdate) SetStatus(o order.Status) *OrderUpdate {
+	ou.mutation.SetStatus(o)
+	return ou
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (ou *OrderUpdate) SetNillableStatus(o *order.Status) *OrderUpdate {
+	if o != nil {
+		ou.SetStatus(*o)
+	}
+	return ou
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (ou *OrderUpdate) SetUserID(id int) *OrderUpdate {
+	ou.mutation.SetUserID(id)
+	return ou
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (ou *OrderUpdate) SetUser(u *User) *OrderUpdate {
+	return ou.SetUserID(u.ID)
 }
 
 // AddItemIDs adds the "items" edge to the OrderItem entity by IDs.
@@ -84,25 +108,10 @@ func (ou *OrderUpdate) Mutation() *OrderMutation {
 	return ou.mutation
 }
 
-// ClearUser clears all "user" edges to the User entity.
+// ClearUser clears the "user" edge to the User entity.
 func (ou *OrderUpdate) ClearUser() *OrderUpdate {
 	ou.mutation.ClearUser()
 	return ou
-}
-
-// RemoveUserIDs removes the "user" edge to User entities by IDs.
-func (ou *OrderUpdate) RemoveUserIDs(ids ...int) *OrderUpdate {
-	ou.mutation.RemoveUserIDs(ids...)
-	return ou
-}
-
-// RemoveUser removes "user" edges to User entities.
-func (ou *OrderUpdate) RemoveUser(u ...*User) *OrderUpdate {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return ou.RemoveUserIDs(ids...)
 }
 
 // ClearItems clears all "items" edges to the OrderItem entity.
@@ -159,7 +168,28 @@ func (ou *OrderUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ou *OrderUpdate) check() error {
+	if v, ok := ou.mutation.Address(); ok {
+		if err := order.AddressValidator(v); err != nil {
+			return &ValidationError{Name: "address", err: fmt.Errorf(`ent: validator failed for field "Order.address": %w`, err)}
+		}
+	}
+	if v, ok := ou.mutation.Status(); ok {
+		if err := order.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Order.status": %w`, err)}
+		}
+	}
+	if ou.mutation.UserCleared() && len(ou.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Order.user"`)
+	}
+	return nil
+}
+
 func (ou *OrderUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := ou.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(order.Table, order.Columns, sqlgraph.NewFieldSpec(order.FieldID, field.TypeInt))
 	if ps := ou.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -168,9 +198,15 @@ func (ou *OrderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := ou.mutation.Address(); ok {
+		_spec.SetField(order.FieldAddress, field.TypeString, value)
+	}
+	if value, ok := ou.mutation.Status(); ok {
+		_spec.SetField(order.FieldStatus, field.TypeEnum, value)
+	}
 	if ou.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
@@ -178,28 +214,12 @@ func (ou *OrderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ou.mutation.RemovedUserIDs(); len(nodes) > 0 && !ou.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   order.UserTable,
-			Columns: []string{order.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := ou.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
@@ -307,19 +327,43 @@ type OrderUpdateOne struct {
 	mutation *OrderMutation
 }
 
-// AddUserIDs adds the "user" edge to the User entity by IDs.
-func (ouo *OrderUpdateOne) AddUserIDs(ids ...int) *OrderUpdateOne {
-	ouo.mutation.AddUserIDs(ids...)
+// SetAddress sets the "address" field.
+func (ouo *OrderUpdateOne) SetAddress(s string) *OrderUpdateOne {
+	ouo.mutation.SetAddress(s)
 	return ouo
 }
 
-// AddUser adds the "user" edges to the User entity.
-func (ouo *OrderUpdateOne) AddUser(u ...*User) *OrderUpdateOne {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (ouo *OrderUpdateOne) SetNillableAddress(s *string) *OrderUpdateOne {
+	if s != nil {
+		ouo.SetAddress(*s)
 	}
-	return ouo.AddUserIDs(ids...)
+	return ouo
+}
+
+// SetStatus sets the "status" field.
+func (ouo *OrderUpdateOne) SetStatus(o order.Status) *OrderUpdateOne {
+	ouo.mutation.SetStatus(o)
+	return ouo
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (ouo *OrderUpdateOne) SetNillableStatus(o *order.Status) *OrderUpdateOne {
+	if o != nil {
+		ouo.SetStatus(*o)
+	}
+	return ouo
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (ouo *OrderUpdateOne) SetUserID(id int) *OrderUpdateOne {
+	ouo.mutation.SetUserID(id)
+	return ouo
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (ouo *OrderUpdateOne) SetUser(u *User) *OrderUpdateOne {
+	return ouo.SetUserID(u.ID)
 }
 
 // AddItemIDs adds the "items" edge to the OrderItem entity by IDs.
@@ -361,25 +405,10 @@ func (ouo *OrderUpdateOne) Mutation() *OrderMutation {
 	return ouo.mutation
 }
 
-// ClearUser clears all "user" edges to the User entity.
+// ClearUser clears the "user" edge to the User entity.
 func (ouo *OrderUpdateOne) ClearUser() *OrderUpdateOne {
 	ouo.mutation.ClearUser()
 	return ouo
-}
-
-// RemoveUserIDs removes the "user" edge to User entities by IDs.
-func (ouo *OrderUpdateOne) RemoveUserIDs(ids ...int) *OrderUpdateOne {
-	ouo.mutation.RemoveUserIDs(ids...)
-	return ouo
-}
-
-// RemoveUser removes "user" edges to User entities.
-func (ouo *OrderUpdateOne) RemoveUser(u ...*User) *OrderUpdateOne {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return ouo.RemoveUserIDs(ids...)
 }
 
 // ClearItems clears all "items" edges to the OrderItem entity.
@@ -449,7 +478,28 @@ func (ouo *OrderUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ouo *OrderUpdateOne) check() error {
+	if v, ok := ouo.mutation.Address(); ok {
+		if err := order.AddressValidator(v); err != nil {
+			return &ValidationError{Name: "address", err: fmt.Errorf(`ent: validator failed for field "Order.address": %w`, err)}
+		}
+	}
+	if v, ok := ouo.mutation.Status(); ok {
+		if err := order.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Order.status": %w`, err)}
+		}
+	}
+	if ouo.mutation.UserCleared() && len(ouo.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Order.user"`)
+	}
+	return nil
+}
+
 func (ouo *OrderUpdateOne) sqlSave(ctx context.Context) (_node *Order, err error) {
+	if err := ouo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(order.Table, order.Columns, sqlgraph.NewFieldSpec(order.FieldID, field.TypeInt))
 	id, ok := ouo.mutation.ID()
 	if !ok {
@@ -475,9 +525,15 @@ func (ouo *OrderUpdateOne) sqlSave(ctx context.Context) (_node *Order, err error
 			}
 		}
 	}
+	if value, ok := ouo.mutation.Address(); ok {
+		_spec.SetField(order.FieldAddress, field.TypeString, value)
+	}
+	if value, ok := ouo.mutation.Status(); ok {
+		_spec.SetField(order.FieldStatus, field.TypeEnum, value)
+	}
 	if ouo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
@@ -485,28 +541,12 @@ func (ouo *OrderUpdateOne) sqlSave(ctx context.Context) (_node *Order, err error
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ouo.mutation.RemovedUserIDs(); len(nodes) > 0 && !ouo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   order.UserTable,
-			Columns: []string{order.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := ouo.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},

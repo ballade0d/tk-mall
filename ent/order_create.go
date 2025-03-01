@@ -22,19 +22,35 @@ type OrderCreate struct {
 	hooks    []Hook
 }
 
-// AddUserIDs adds the "user" edge to the User entity by IDs.
-func (oc *OrderCreate) AddUserIDs(ids ...int) *OrderCreate {
-	oc.mutation.AddUserIDs(ids...)
+// SetAddress sets the "address" field.
+func (oc *OrderCreate) SetAddress(s string) *OrderCreate {
+	oc.mutation.SetAddress(s)
 	return oc
 }
 
-// AddUser adds the "user" edges to the User entity.
-func (oc *OrderCreate) AddUser(u ...*User) *OrderCreate {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
+// SetStatus sets the "status" field.
+func (oc *OrderCreate) SetStatus(o order.Status) *OrderCreate {
+	oc.mutation.SetStatus(o)
+	return oc
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (oc *OrderCreate) SetNillableStatus(o *order.Status) *OrderCreate {
+	if o != nil {
+		oc.SetStatus(*o)
 	}
-	return oc.AddUserIDs(ids...)
+	return oc
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (oc *OrderCreate) SetUserID(id int) *OrderCreate {
+	oc.mutation.SetUserID(id)
+	return oc
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (oc *OrderCreate) SetUser(u *User) *OrderCreate {
+	return oc.SetUserID(u.ID)
 }
 
 // AddItemIDs adds the "items" edge to the OrderItem entity by IDs.
@@ -78,6 +94,7 @@ func (oc *OrderCreate) Mutation() *OrderMutation {
 
 // Save creates the Order in the database.
 func (oc *OrderCreate) Save(ctx context.Context) (*Order, error) {
+	oc.defaults()
 	return withHooks(ctx, oc.sqlSave, oc.mutation, oc.hooks)
 }
 
@@ -103,8 +120,32 @@ func (oc *OrderCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (oc *OrderCreate) defaults() {
+	if _, ok := oc.mutation.Status(); !ok {
+		v := order.DefaultStatus
+		oc.mutation.SetStatus(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (oc *OrderCreate) check() error {
+	if _, ok := oc.mutation.Address(); !ok {
+		return &ValidationError{Name: "address", err: errors.New(`ent: missing required field "Order.address"`)}
+	}
+	if v, ok := oc.mutation.Address(); ok {
+		if err := order.AddressValidator(v); err != nil {
+			return &ValidationError{Name: "address", err: fmt.Errorf(`ent: validator failed for field "Order.address": %w`, err)}
+		}
+	}
+	if _, ok := oc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Order.status"`)}
+	}
+	if v, ok := oc.mutation.Status(); ok {
+		if err := order.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Order.status": %w`, err)}
+		}
+	}
 	if len(oc.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Order.user"`)}
 	}
@@ -134,9 +175,17 @@ func (oc *OrderCreate) createSpec() (*Order, *sqlgraph.CreateSpec) {
 		_node = &Order{config: oc.config}
 		_spec = sqlgraph.NewCreateSpec(order.Table, sqlgraph.NewFieldSpec(order.FieldID, field.TypeInt))
 	)
+	if value, ok := oc.mutation.Address(); ok {
+		_spec.SetField(order.FieldAddress, field.TypeString, value)
+		_node.Address = value
+	}
+	if value, ok := oc.mutation.Status(); ok {
+		_spec.SetField(order.FieldStatus, field.TypeEnum, value)
+		_node.Status = value
+	}
 	if nodes := oc.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
@@ -148,6 +197,7 @@ func (oc *OrderCreate) createSpec() (*Order, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.order_user = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := oc.mutation.ItemsIDs(); len(nodes) > 0 {
@@ -203,6 +253,7 @@ func (ocb *OrderCreateBulk) Save(ctx context.Context) ([]*Order, error) {
 	for i := range ocb.builders {
 		func(i int, root context.Context) {
 			builder := ocb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*OrderMutation)
 				if !ok {

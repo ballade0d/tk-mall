@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	OrderService_CreateOrder_FullMethodName  = "/api.mall.service.v1.OrderService/CreateOrder"
-	OrderService_GetOrderList_FullMethodName = "/api.mall.service.v1.OrderService/GetOrderList"
-	OrderService_GetOrder_FullMethodName     = "/api.mall.service.v1.OrderService/GetOrder"
-	OrderService_PayOrder_FullMethodName     = "/api.mall.service.v1.OrderService/PayOrder"
+	OrderService_CreateOrder_FullMethodName   = "/api.mall.service.v1.OrderService/CreateOrder"
+	OrderService_GetOrderList_FullMethodName  = "/api.mall.service.v1.OrderService/GetOrderList"
+	OrderService_GetOrder_FullMethodName      = "/api.mall.service.v1.OrderService/GetOrder"
+	OrderService_CreatePayment_FullMethodName = "/api.mall.service.v1.OrderService/CreatePayment"
+	OrderService_PayOrder_FullMethodName      = "/api.mall.service.v1.OrderService/PayOrder"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -32,6 +33,7 @@ type OrderServiceClient interface {
 	CreateOrder(ctx context.Context, in *CreateOrderRequest, opts ...grpc.CallOption) (*CreateOrderResponse, error)
 	GetOrderList(ctx context.Context, in *GetOrderListRequest, opts ...grpc.CallOption) (*GetOrderListResponse, error)
 	GetOrder(ctx context.Context, in *GetOrderRequest, opts ...grpc.CallOption) (*GetOrderResponse, error)
+	CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*CreatePaymentResponse, error)
 	PayOrder(ctx context.Context, in *PayOrderRequest, opts ...grpc.CallOption) (*PayOrderResponse, error)
 }
 
@@ -73,6 +75,16 @@ func (c *orderServiceClient) GetOrder(ctx context.Context, in *GetOrderRequest, 
 	return out, nil
 }
 
+func (c *orderServiceClient) CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*CreatePaymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePaymentResponse)
+	err := c.cc.Invoke(ctx, OrderService_CreatePayment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *orderServiceClient) PayOrder(ctx context.Context, in *PayOrderRequest, opts ...grpc.CallOption) (*PayOrderResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PayOrderResponse)
@@ -90,6 +102,7 @@ type OrderServiceServer interface {
 	CreateOrder(context.Context, *CreateOrderRequest) (*CreateOrderResponse, error)
 	GetOrderList(context.Context, *GetOrderListRequest) (*GetOrderListResponse, error)
 	GetOrder(context.Context, *GetOrderRequest) (*GetOrderResponse, error)
+	CreatePayment(context.Context, *CreatePaymentRequest) (*CreatePaymentResponse, error)
 	PayOrder(context.Context, *PayOrderRequest) (*PayOrderResponse, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
@@ -109,6 +122,9 @@ func (UnimplementedOrderServiceServer) GetOrderList(context.Context, *GetOrderLi
 }
 func (UnimplementedOrderServiceServer) GetOrder(context.Context, *GetOrderRequest) (*GetOrderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) CreatePayment(context.Context, *CreatePaymentRequest) (*CreatePaymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePayment not implemented")
 }
 func (UnimplementedOrderServiceServer) PayOrder(context.Context, *PayOrderRequest) (*PayOrderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PayOrder not implemented")
@@ -188,6 +204,24 @@ func _OrderService_GetOrder_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_CreatePayment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePaymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).CreatePayment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_CreatePayment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).CreatePayment(ctx, req.(*CreatePaymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _OrderService_PayOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PayOrderRequest)
 	if err := dec(in); err != nil {
@@ -224,6 +258,10 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetOrder",
 			Handler:    _OrderService_GetOrder_Handler,
+		},
+		{
+			MethodName: "CreatePayment",
+			Handler:    _OrderService_CreatePayment_Handler,
 		},
 		{
 			MethodName: "PayOrder",

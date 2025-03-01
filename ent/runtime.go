@@ -4,6 +4,7 @@ package ent
 
 import (
 	"mall/ent/cartitem"
+	"mall/ent/order"
 	"mall/ent/orderitem"
 	"mall/ent/schema"
 )
@@ -20,6 +21,12 @@ func init() {
 	cartitem.DefaultQuantity = cartitemDescQuantity.Default.(int)
 	// cartitem.QuantityValidator is a validator for the "quantity" field. It is called by the builders before save.
 	cartitem.QuantityValidator = cartitemDescQuantity.Validators[0].(func(int) error)
+	orderFields := schema.Order{}.Fields()
+	_ = orderFields
+	// orderDescAddress is the schema descriptor for address field.
+	orderDescAddress := orderFields[0].Descriptor()
+	// order.AddressValidator is a validator for the "address" field. It is called by the builders before save.
+	order.AddressValidator = orderDescAddress.Validators[0].(func(string) error)
 	orderitemFields := schema.OrderItem{}.Fields()
 	_ = orderitemFields
 	// orderitemDescQuantity is the schema descriptor for quantity field.
@@ -32,4 +39,6 @@ func init() {
 	orderitemDescPrice := orderitemFields[1].Descriptor()
 	// orderitem.PriceValidator is a validator for the "price" field. It is called by the builders before save.
 	orderitem.PriceValidator = orderitemDescPrice.Validators[0].(func(float32) error)
+	paymentFields := schema.Payment{}.Fields()
+	_ = paymentFields
 }

@@ -16,7 +16,7 @@ func (Payment) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("id"),
 		field.Float32("amount"),
-		field.Enum("status").Values("pending", "paid", "failed"),
+		field.Enum("status").Values("pending", "paid", "failed").Default("pending"),
 	}
 }
 

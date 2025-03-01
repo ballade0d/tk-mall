@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mall/ent/order"
 	"mall/ent/payment"
+	"mall/ent/user"
 	"strings"
 
 	"entgo.io/ent"
@@ -14,19 +15,24 @@ import (
 
 // Order is the model entity for the Order schema.
 type Order struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Address holds the value of the "address" field.
+	Address string `json:"address,omitempty"`
+	// Status holds the value of the "status" field.
+	Status order.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrderQuery when eager-loading is set.
 	Edges        OrderEdges `json:"edges"`
+	order_user   *int
 	selectValues sql.SelectValues
 }
 
 // OrderEdges holds the relations/edges for other nodes in the graph.
 type OrderEdges struct {
 	// User holds the value of the user edge.
-	User []*User `json:"user,omitempty"`
+	User *User `json:"user,omitempty"`
 	// Items holds the value of the items edge.
 	Items []*OrderItem `json:"items,omitempty"`
 	// Payment holds the value of the payment edge.
@@ -37,10 +43,12 @@ type OrderEdges struct {
 }
 
 // UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading.
-func (e OrderEdges) UserOrErr() ([]*User, error) {
-	if e.loadedTypes[0] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e OrderEdges) UserOrErr() (*User, error) {
+	if e.User != nil {
 		return e.User, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "user"}
 }
@@ -72,6 +80,10 @@ func (*Order) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case order.FieldID:
 			values[i] = new(sql.NullInt64)
+		case order.FieldAddress, order.FieldStatus:
+			values[i] = new(sql.NullString)
+		case order.ForeignKeys[0]: // order_user
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -93,6 +105,25 @@ func (o *Order) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			o.ID = int(value.Int64)
+		case order.FieldAddress:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field address", values[i])
+			} else if value.Valid {
+				o.Address = value.String
+			}
+		case order.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				o.Status = order.Status(value.String)
+			}
+		case order.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field order_user", value)
+			} else if value.Valid {
+				o.order_user = new(int)
+				*o.order_user = int(value.Int64)
+			}
 		default:
 			o.selectValues.Set(columns[i], values[i])
 		}
@@ -143,7 +174,12 @@ func (o *Order) Unwrap() *Order {
 func (o *Order) String() string {
 	var builder strings.Builder
 	builder.WriteString("Order(")
-	builder.WriteString(fmt.Sprintf("id=%v", o.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", o.ID))
+	builder.WriteString("address=")
+	builder.WriteString(o.Address)
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(fmt.Sprintf("%v", o.Status))
 	builder.WriteByte(')')
 	return builder.String()
 }

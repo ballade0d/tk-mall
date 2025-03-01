@@ -32,6 +32,14 @@ func (pc *PaymentCreate) SetStatus(pa payment.Status) *PaymentCreate {
 	return pc
 }
 
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (pc *PaymentCreate) SetNillableStatus(pa *payment.Status) *PaymentCreate {
+	if pa != nil {
+		pc.SetStatus(*pa)
+	}
+	return pc
+}
+
 // SetID sets the "id" field.
 func (pc *PaymentCreate) SetID(i int) *PaymentCreate {
 	pc.mutation.SetID(i)
@@ -64,6 +72,7 @@ func (pc *PaymentCreate) Mutation() *PaymentMutation {
 
 // Save creates the Payment in the database.
 func (pc *PaymentCreate) Save(ctx context.Context) (*Payment, error) {
+	pc.defaults()
 	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
 }
 
@@ -86,6 +95,14 @@ func (pc *PaymentCreate) Exec(ctx context.Context) error {
 func (pc *PaymentCreate) ExecX(ctx context.Context) {
 	if err := pc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (pc *PaymentCreate) defaults() {
+	if _, ok := pc.mutation.Status(); !ok {
+		v := payment.DefaultStatus
+		pc.mutation.SetStatus(v)
 	}
 }
 
@@ -180,6 +197,7 @@ func (pcb *PaymentCreateBulk) Save(ctx context.Context) ([]*Payment, error) {
 	for i := range pcb.builders {
 		func(i int, root context.Context) {
 			builder := pcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PaymentMutation)
 				if !ok {

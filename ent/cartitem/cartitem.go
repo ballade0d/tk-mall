@@ -28,7 +28,7 @@ const (
 	// CartColumn is the table column denoting the cart relation/edge.
 	CartColumn = "cart_items"
 	// ItemTable is the table that holds the item relation/edge.
-	ItemTable = "items"
+	ItemTable = "cart_items"
 	// ItemInverseTable is the table name for the Item entity.
 	// It exists in this package in order to avoid circular dependency with the "item" package.
 	ItemInverseTable = "items"
@@ -46,6 +46,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"cart_items",
+	"cart_item_item",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -90,17 +91,10 @@ func ByCartField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByItemCount orders the results by item count.
-func ByItemCount(opts ...sql.OrderTermOption) OrderOption {
+// ByItemField orders the results by item field.
+func ByItemField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newItemStep(), opts...)
-	}
-}
-
-// ByItem orders the results by item terms.
-func ByItem(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newItemStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newItemStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newCartStep() *sqlgraph.Step {
@@ -114,6 +108,6 @@ func newItemStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ItemInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ItemTable, ItemColumn),
+		sqlgraph.Edge(sqlgraph.M2O, false, ItemTable, ItemColumn),
 	)
 }

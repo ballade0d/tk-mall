@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mall/ent/cart"
 	"mall/ent/cartitem"
+	"mall/ent/item"
 	"strings"
 
 	"entgo.io/ent"
@@ -21,9 +22,10 @@ type CartItem struct {
 	Quantity int `json:"quantity,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CartItemQuery when eager-loading is set.
-	Edges        CartItemEdges `json:"edges"`
-	cart_items   *int
-	selectValues sql.SelectValues
+	Edges          CartItemEdges `json:"edges"`
+	cart_items     *int
+	cart_item_item *int
+	selectValues   sql.SelectValues
 }
 
 // CartItemEdges holds the relations/edges for other nodes in the graph.
@@ -31,7 +33,7 @@ type CartItemEdges struct {
 	// Cart holds the value of the cart edge.
 	Cart *Cart `json:"cart,omitempty"`
 	// Item holds the value of the item edge.
-	Item []*Item `json:"item,omitempty"`
+	Item *Item `json:"item,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -49,10 +51,12 @@ func (e CartItemEdges) CartOrErr() (*Cart, error) {
 }
 
 // ItemOrErr returns the Item value or an error if the edge
-// was not loaded in eager-loading.
-func (e CartItemEdges) ItemOrErr() ([]*Item, error) {
-	if e.loadedTypes[1] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CartItemEdges) ItemOrErr() (*Item, error) {
+	if e.Item != nil {
 		return e.Item, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: item.Label}
 	}
 	return nil, &NotLoadedError{edge: "item"}
 }
@@ -65,6 +69,8 @@ func (*CartItem) scanValues(columns []string) ([]any, error) {
 		case cartitem.FieldID, cartitem.FieldQuantity:
 			values[i] = new(sql.NullInt64)
 		case cartitem.ForeignKeys[0]: // cart_items
+			values[i] = new(sql.NullInt64)
+		case cartitem.ForeignKeys[1]: // cart_item_item
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -99,6 +105,13 @@ func (ci *CartItem) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				ci.cart_items = new(int)
 				*ci.cart_items = int(value.Int64)
+			}
+		case cartitem.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field cart_item_item", value)
+			} else if value.Valid {
+				ci.cart_item_item = new(int)
+				*ci.cart_item_item = int(value.Int64)
 			}
 		default:
 			ci.selectValues.Set(columns[i], values[i])

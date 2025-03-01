@@ -22,6 +22,6 @@ func (CartItem) Fields() []ent.Field {
 func (CartItem) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("cart", Cart.Type).Ref("items").Unique().Required(),
-		edge.To("item", Item.Type).Required(),
+		edge.To("item", Item.Type).Unique().Required(),
 	}
 }

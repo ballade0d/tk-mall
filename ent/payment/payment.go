@@ -62,6 +62,9 @@ func ValidColumn(column string) bool {
 // Status defines the type for the "status" enum field.
 type Status string
 
+// StatusPending is the default value of the Status enum.
+const DefaultStatus = StatusPending
+
 // Status values.
 const (
 	StatusPending Status = "pending"

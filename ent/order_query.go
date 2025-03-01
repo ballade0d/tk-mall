@@ -29,6 +29,7 @@ type OrderQuery struct {
 	withUser    *UserQuery
 	withItems   *OrderItemQuery
 	withPayment *PaymentQuery
+	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -79,7 +80,7 @@ func (oq *OrderQuery) QueryUser() *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(order.Table, order.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, order.UserTable, order.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, order.UserTable, order.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -367,6 +368,18 @@ func (oq *OrderQuery) WithPayment(opts ...func(*PaymentQuery)) *OrderQuery {
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		Address string `json:"address,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Order.Query().
+//		GroupBy(order.FieldAddress).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (oq *OrderQuery) GroupBy(field string, fields ...string) *OrderGroupBy {
 	oq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &OrderGroupBy{build: oq}
@@ -378,6 +391,16 @@ func (oq *OrderQuery) GroupBy(field string, fields ...string) *OrderGroupBy {
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		Address string `json:"address,omitempty"`
+//	}
+//
+//	client.Order.Query().
+//		Select(order.FieldAddress).
+//		Scan(ctx, &v)
 func (oq *OrderQuery) Select(fields ...string) *OrderSelect {
 	oq.ctx.Fields = append(oq.ctx.Fields, fields...)
 	sbuild := &OrderSelect{OrderQuery: oq}
@@ -420,6 +443,7 @@ func (oq *OrderQuery) prepareQuery(ctx context.Context) error {
 func (oq *OrderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Order, error) {
 	var (
 		nodes       = []*Order{}
+		withFKs     = oq.withFKs
 		_spec       = oq.querySpec()
 		loadedTypes = [3]bool{
 			oq.withUser != nil,
@@ -427,6 +451,12 @@ func (oq *OrderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Order,
 			oq.withPayment != nil,
 		}
 	)
+	if oq.withUser != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, order.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Order).scanValues(nil, columns)
 	}
@@ -446,9 +476,8 @@ func (oq *OrderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Order,
 		return nodes, nil
 	}
 	if query := oq.withUser; query != nil {
-		if err := oq.loadUser(ctx, query, nodes,
-			func(n *Order) { n.Edges.User = []*User{} },
-			func(n *Order, e *User) { n.Edges.User = append(n.Edges.User, e) }); err != nil {
+		if err := oq.loadUser(ctx, query, nodes, nil,
+			func(n *Order, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -469,33 +498,34 @@ func (oq *OrderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Order,
 }
 
 func (oq *OrderQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Order, init func(*Order), assign func(*Order, *User)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Order)
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Order)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
+		if nodes[i].order_user == nil {
+			continue
 		}
+		fk := *nodes[i].order_user
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	query.withFKs = true
-	query.Where(predicate.User(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(order.UserColumn), fks...))
-	}))
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.order_user
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "order_user" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "order_user" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "order_user" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
