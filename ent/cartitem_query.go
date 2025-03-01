@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"mall/ent/cart"
 	"mall/ent/cartitem"
@@ -99,7 +100,7 @@ func (ciq *CartItemQuery) QueryItem() *ItemQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(cartitem.Table, cartitem.FieldID, selector),
 			sqlgraph.To(item.Table, item.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, cartitem.ItemTable, cartitem.ItemColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, cartitem.ItemTable, cartitem.ItemColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(ciq.driver.Dialect(), step)
 		return fromU, nil
@@ -413,7 +414,7 @@ func (ciq *CartItemQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ca
 			ciq.withItem != nil,
 		}
 	)
-	if ciq.withCart != nil || ciq.withItem != nil {
+	if ciq.withCart != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -444,8 +445,9 @@ func (ciq *CartItemQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ca
 		}
 	}
 	if query := ciq.withItem; query != nil {
-		if err := ciq.loadItem(ctx, query, nodes, nil,
-			func(n *CartItem, e *Item) { n.Edges.Item = e }); err != nil {
+		if err := ciq.loadItem(ctx, query, nodes,
+			func(n *CartItem) { n.Edges.Item = []*Item{} },
+			func(n *CartItem, e *Item) { n.Edges.Item = append(n.Edges.Item, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -485,34 +487,33 @@ func (ciq *CartItemQuery) loadCart(ctx context.Context, query *CartQuery, nodes 
 	return nil
 }
 func (ciq *CartItemQuery) loadItem(ctx context.Context, query *ItemQuery, nodes []*CartItem, init func(*CartItem), assign func(*CartItem, *Item)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*CartItem)
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*CartItem)
 	for i := range nodes {
-		if nodes[i].cart_item_item == nil {
-			continue
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
-		fk := *nodes[i].cart_item_item
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(item.IDIn(ids...))
+	query.withFKs = true
+	query.Where(predicate.Item(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(cartitem.ItemColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.cart_item_item
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "cart_item_item" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "cart_item_item" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "cart_item_item" returned %v for node %v`, *fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }

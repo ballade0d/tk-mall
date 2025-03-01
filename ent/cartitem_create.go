@@ -46,15 +46,19 @@ func (cic *CartItemCreate) SetCart(c *Cart) *CartItemCreate {
 	return cic.SetCartID(c.ID)
 }
 
-// SetItemID sets the "item" edge to the Item entity by ID.
-func (cic *CartItemCreate) SetItemID(id int) *CartItemCreate {
-	cic.mutation.SetItemID(id)
+// AddItemIDs adds the "item" edge to the Item entity by IDs.
+func (cic *CartItemCreate) AddItemIDs(ids ...int) *CartItemCreate {
+	cic.mutation.AddItemIDs(ids...)
 	return cic
 }
 
-// SetItem sets the "item" edge to the Item entity.
-func (cic *CartItemCreate) SetItem(i *Item) *CartItemCreate {
-	return cic.SetItemID(i.ID)
+// AddItem adds the "item" edges to the Item entity.
+func (cic *CartItemCreate) AddItem(i ...*Item) *CartItemCreate {
+	ids := make([]int, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return cic.AddItemIDs(ids...)
 }
 
 // Mutation returns the CartItemMutation object of the builder.
@@ -163,7 +167,7 @@ func (cic *CartItemCreate) createSpec() (*CartItem, *sqlgraph.CreateSpec) {
 	}
 	if nodes := cic.mutation.ItemIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   cartitem.ItemTable,
 			Columns: []string{cartitem.ItemColumn},
@@ -175,7 +179,6 @@ func (cic *CartItemCreate) createSpec() (*CartItem, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.cart_item_item = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

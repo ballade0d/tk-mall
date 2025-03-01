@@ -19,6 +19,12 @@ service OrderService {
   rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {
     option (google.api.http) = {get: "/v1/order/{id}"};
   }
+  rpc PayOrder(PayOrderRequest) returns (PayOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/order/{order_id}/pay"
+      body: "*"
+    };
+  }
 }
 
 message CreateOrderRequest {
@@ -43,6 +49,21 @@ message GetOrderRequest {
 
 message GetOrderResponse {
   Order order = 1;
+}
+
+message PayOrderRequest {
+  int64 order_id = 1;
+}
+
+message PayOrderResponse {
+  Payments payment = 1;
+}
+
+message Payments {
+  int64 id = 1;
+  int64 order_id = 2;
+  float amount = 3;
+  string status = 4;
 }
 
 message Order {

@@ -23,8 +23,9 @@ type Item struct {
 	// Price holds the value of the "price" field.
 	Price float32 `json:"price,omitempty"`
 	// Stock holds the value of the "stock" field.
-	Stock        int `json:"stock,omitempty"`
-	selectValues sql.SelectValues
+	Stock          int `json:"stock,omitempty"`
+	cart_item_item *int
+	selectValues   sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -38,6 +39,8 @@ func (*Item) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case item.FieldName, item.FieldDescription:
 			values[i] = new(sql.NullString)
+		case item.ForeignKeys[0]: // cart_item_item
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -82,6 +85,13 @@ func (i *Item) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field stock", values[j])
 			} else if value.Valid {
 				i.Stock = int(value.Int64)
+			}
+		case item.ForeignKeys[0]:
+			if value, ok := values[j].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field cart_item_item", value)
+			} else if value.Valid {
+				i.cart_item_item = new(int)
+				*i.cart_item_item = int(value.Int64)
 			}
 		default:
 			i.selectValues.Set(columns[j], values[j])

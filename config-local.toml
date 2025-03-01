@@ -19,3 +19,4 @@ indices = "mall"
 [services]
 admin_service = "localhost:50010"
 order_service = "localhost:50020"
+user_service = "localhost:50030"

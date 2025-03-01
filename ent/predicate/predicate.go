@@ -15,8 +15,17 @@ type CartItem func(*sql.Selector)
 // Item is the predicate function for item builders.
 type Item func(*sql.Selector)
 
+// Order is the predicate function for order builders.
+type Order func(*sql.Selector)
+
+// OrderItem is the predicate function for orderitem builders.
+type OrderItem func(*sql.Selector)
+
 // Password is the predicate function for password builders.
 type Password func(*sql.Selector)
+
+// Payment is the predicate function for payment builders.
+type Payment func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

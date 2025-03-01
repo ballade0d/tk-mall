@@ -18,8 +18,14 @@ type Tx struct {
 	CartItem *CartItemClient
 	// Item is the client for interacting with the Item builders.
 	Item *ItemClient
+	// Order is the client for interacting with the Order builders.
+	Order *OrderClient
+	// OrderItem is the client for interacting with the OrderItem builders.
+	OrderItem *OrderItemClient
 	// Password is the client for interacting with the Password builders.
 	Password *PasswordClient
+	// Payment is the client for interacting with the Payment builders.
+	Payment *PaymentClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -156,7 +162,10 @@ func (tx *Tx) init() {
 	tx.Cart = NewCartClient(tx.config)
 	tx.CartItem = NewCartItemClient(tx.config)
 	tx.Item = NewItemClient(tx.config)
+	tx.Order = NewOrderClient(tx.config)
+	tx.OrderItem = NewOrderItemClient(tx.config)
 	tx.Password = NewPasswordClient(tx.config)
+	tx.Payment = NewPaymentClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

@@ -61,15 +61,19 @@ func (ciu *CartItemUpdate) SetCart(c *Cart) *CartItemUpdate {
 	return ciu.SetCartID(c.ID)
 }
 
-// SetItemID sets the "item" edge to the Item entity by ID.
-func (ciu *CartItemUpdate) SetItemID(id int) *CartItemUpdate {
-	ciu.mutation.SetItemID(id)
+// AddItemIDs adds the "item" edge to the Item entity by IDs.
+func (ciu *CartItemUpdate) AddItemIDs(ids ...int) *CartItemUpdate {
+	ciu.mutation.AddItemIDs(ids...)
 	return ciu
 }
 
-// SetItem sets the "item" edge to the Item entity.
-func (ciu *CartItemUpdate) SetItem(i *Item) *CartItemUpdate {
-	return ciu.SetItemID(i.ID)
+// AddItem adds the "item" edges to the Item entity.
+func (ciu *CartItemUpdate) AddItem(i ...*Item) *CartItemUpdate {
+	ids := make([]int, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return ciu.AddItemIDs(ids...)
 }
 
 // Mutation returns the CartItemMutation object of the builder.
@@ -83,10 +87,25 @@ func (ciu *CartItemUpdate) ClearCart() *CartItemUpdate {
 	return ciu
 }
 
-// ClearItem clears the "item" edge to the Item entity.
+// ClearItem clears all "item" edges to the Item entity.
 func (ciu *CartItemUpdate) ClearItem() *CartItemUpdate {
 	ciu.mutation.ClearItem()
 	return ciu
+}
+
+// RemoveItemIDs removes the "item" edge to Item entities by IDs.
+func (ciu *CartItemUpdate) RemoveItemIDs(ids ...int) *CartItemUpdate {
+	ciu.mutation.RemoveItemIDs(ids...)
+	return ciu
+}
+
+// RemoveItem removes "item" edges to Item entities.
+func (ciu *CartItemUpdate) RemoveItem(i ...*Item) *CartItemUpdate {
+	ids := make([]int, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return ciu.RemoveItemIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -125,9 +144,6 @@ func (ciu *CartItemUpdate) check() error {
 	}
 	if ciu.mutation.CartCleared() && len(ciu.mutation.CartIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CartItem.cart"`)
-	}
-	if ciu.mutation.ItemCleared() && len(ciu.mutation.ItemIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "CartItem.item"`)
 	}
 	return nil
 }
@@ -181,7 +197,7 @@ func (ciu *CartItemUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ciu.mutation.ItemCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   cartitem.ItemTable,
 			Columns: []string{cartitem.ItemColumn},
@@ -192,9 +208,25 @@ func (ciu *CartItemUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := ciu.mutation.RemovedItemIDs(); len(nodes) > 0 && !ciu.mutation.ItemCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   cartitem.ItemTable,
+			Columns: []string{cartitem.ItemColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := ciu.mutation.ItemIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   cartitem.ItemTable,
 			Columns: []string{cartitem.ItemColumn},
@@ -260,15 +292,19 @@ func (ciuo *CartItemUpdateOne) SetCart(c *Cart) *CartItemUpdateOne {
 	return ciuo.SetCartID(c.ID)
 }
 
-// SetItemID sets the "item" edge to the Item entity by ID.
-func (ciuo *CartItemUpdateOne) SetItemID(id int) *CartItemUpdateOne {
-	ciuo.mutation.SetItemID(id)
+// AddItemIDs adds the "item" edge to the Item entity by IDs.
+func (ciuo *CartItemUpdateOne) AddItemIDs(ids ...int) *CartItemUpdateOne {
+	ciuo.mutation.AddItemIDs(ids...)
 	return ciuo
 }
 
-// SetItem sets the "item" edge to the Item entity.
-func (ciuo *CartItemUpdateOne) SetItem(i *Item) *CartItemUpdateOne {
-	return ciuo.SetItemID(i.ID)
+// AddItem adds the "item" edges to the Item entity.
+func (ciuo *CartItemUpdateOne) AddItem(i ...*Item) *CartItemUpdateOne {
+	ids := make([]int, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return ciuo.AddItemIDs(ids...)
 }
 
 // Mutation returns the CartItemMutation object of the builder.
@@ -282,10 +318,25 @@ func (ciuo *CartItemUpdateOne) ClearCart() *CartItemUpdateOne {
 	return ciuo
 }
 
-// ClearItem clears the "item" edge to the Item entity.
+// ClearItem clears all "item" edges to the Item entity.
 func (ciuo *CartItemUpdateOne) ClearItem() *CartItemUpdateOne {
 	ciuo.mutation.ClearItem()
 	return ciuo
+}
+
+// RemoveItemIDs removes the "item" edge to Item entities by IDs.
+func (ciuo *CartItemUpdateOne) RemoveItemIDs(ids ...int) *CartItemUpdateOne {
+	ciuo.mutation.RemoveItemIDs(ids...)
+	return ciuo
+}
+
+// RemoveItem removes "item" edges to Item entities.
+func (ciuo *CartItemUpdateOne) RemoveItem(i ...*Item) *CartItemUpdateOne {
+	ids := make([]int, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return ciuo.RemoveItemIDs(ids...)
 }
 
 // Where appends a list predicates to the CartItemUpdate builder.
@@ -337,9 +388,6 @@ func (ciuo *CartItemUpdateOne) check() error {
 	}
 	if ciuo.mutation.CartCleared() && len(ciuo.mutation.CartIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CartItem.cart"`)
-	}
-	if ciuo.mutation.ItemCleared() && len(ciuo.mutation.ItemIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "CartItem.item"`)
 	}
 	return nil
 }
@@ -410,7 +458,7 @@ func (ciuo *CartItemUpdateOne) sqlSave(ctx context.Context) (_node *CartItem, er
 	}
 	if ciuo.mutation.ItemCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   cartitem.ItemTable,
 			Columns: []string{cartitem.ItemColumn},
@@ -421,9 +469,25 @@ func (ciuo *CartItemUpdateOne) sqlSave(ctx context.Context) (_node *CartItem, er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := ciuo.mutation.RemovedItemIDs(); len(nodes) > 0 && !ciuo.mutation.ItemCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   cartitem.ItemTable,
+			Columns: []string{cartitem.ItemColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(item.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := ciuo.mutation.ItemIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   cartitem.ItemTable,
 			Columns: []string{cartitem.ItemColumn},

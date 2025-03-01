@@ -9,7 +9,10 @@ import (
 	"mall/ent/cart"
 	"mall/ent/cartitem"
 	"mall/ent/item"
+	"mall/ent/order"
+	"mall/ent/orderitem"
 	"mall/ent/password"
+	"mall/ent/payment"
 	"mall/ent/user"
 	"reflect"
 	"sync"
@@ -77,11 +80,14 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			cart.Table:     cart.ValidColumn,
-			cartitem.Table: cartitem.ValidColumn,
-			item.Table:     item.ValidColumn,
-			password.Table: password.ValidColumn,
-			user.Table:     user.ValidColumn,
+			cart.Table:      cart.ValidColumn,
+			cartitem.Table:  cartitem.ValidColumn,
+			item.Table:      item.ValidColumn,
+			order.Table:     order.ValidColumn,
+			orderitem.Table: orderitem.ValidColumn,
+			password.Table:  password.ValidColumn,
+			payment.Table:   payment.ValidColumn,
+			user.Table:      user.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

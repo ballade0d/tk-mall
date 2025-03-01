@@ -22,6 +22,7 @@ type ItemQuery struct {
 	order      []item.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Item
+	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -332,9 +333,13 @@ func (iq *ItemQuery) prepareQuery(ctx context.Context) error {
 
 func (iq *ItemQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Item, error) {
 	var (
-		nodes = []*Item{}
-		_spec = iq.querySpec()
+		nodes   = []*Item{}
+		withFKs = iq.withFKs
+		_spec   = iq.querySpec()
 	)
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, item.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Item).scanValues(nil, columns)
 	}

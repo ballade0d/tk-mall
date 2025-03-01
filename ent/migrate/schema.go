@@ -32,7 +32,6 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "quantity", Type: field.TypeInt, Default: 1},
 		{Name: "cart_items", Type: field.TypeInt},
-		{Name: "cart_item_item", Type: field.TypeInt},
 	}
 	// CartItemsTable holds the schema information for the "cart_items" table.
 	CartItemsTable = &schema.Table{
@@ -46,12 +45,6 @@ var (
 				RefColumns: []*schema.Column{CartsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
-			{
-				Symbol:     "cart_items_items_item",
-				Columns:    []*schema.Column{CartItemsColumns[3]},
-				RefColumns: []*schema.Column{ItemsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
 		},
 	}
 	// ItemsColumns holds the columns for the "items" table.
@@ -61,12 +54,59 @@ var (
 		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "price", Type: field.TypeFloat32},
 		{Name: "stock", Type: field.TypeInt},
+		{Name: "cart_item_item", Type: field.TypeInt, Nullable: true},
 	}
 	// ItemsTable holds the schema information for the "items" table.
 	ItemsTable = &schema.Table{
 		Name:       "items",
 		Columns:    ItemsColumns,
 		PrimaryKey: []*schema.Column{ItemsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "items_cart_items_item",
+				Columns:    []*schema.Column{ItemsColumns[5]},
+				RefColumns: []*schema.Column{CartItemsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// OrdersColumns holds the columns for the "orders" table.
+	OrdersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+	}
+	// OrdersTable holds the schema information for the "orders" table.
+	OrdersTable = &schema.Table{
+		Name:       "orders",
+		Columns:    OrdersColumns,
+		PrimaryKey: []*schema.Column{OrdersColumns[0]},
+	}
+	// OrderItemsColumns holds the columns for the "order_items" table.
+	OrderItemsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "quantity", Type: field.TypeInt, Default: 1},
+		{Name: "price", Type: field.TypeFloat32},
+		{Name: "order_items", Type: field.TypeInt},
+		{Name: "order_item_item", Type: field.TypeInt},
+	}
+	// OrderItemsTable holds the schema information for the "order_items" table.
+	OrderItemsTable = &schema.Table{
+		Name:       "order_items",
+		Columns:    OrderItemsColumns,
+		PrimaryKey: []*schema.Column{OrderItemsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "order_items_orders_items",
+				Columns:    []*schema.Column{OrderItemsColumns[3]},
+				RefColumns: []*schema.Column{OrdersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "order_items_items_item",
+				Columns:    []*schema.Column{OrderItemsColumns[4]},
+				RefColumns: []*schema.Column{ItemsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// PasswordsColumns holds the columns for the "passwords" table.
 	PasswordsColumns = []*schema.Column{
@@ -88,25 +128,58 @@ var (
 			},
 		},
 	}
+	// PaymentsColumns holds the columns for the "payments" table.
+	PaymentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "amount", Type: field.TypeFloat32},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "paid", "failed"}},
+		{Name: "order_payment", Type: field.TypeInt, Unique: true, Nullable: true},
+	}
+	// PaymentsTable holds the schema information for the "payments" table.
+	PaymentsTable = &schema.Table{
+		Name:       "payments",
+		Columns:    PaymentsColumns,
+		PrimaryKey: []*schema.Column{PaymentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "payments_orders_payment",
+				Columns:    []*schema.Column{PaymentsColumns[3]},
+				RefColumns: []*schema.Column{OrdersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"admin", "user"}},
+		{Name: "order_user", Type: field.TypeInt, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "users_orders_user",
+				Columns:    []*schema.Column{UsersColumns[4]},
+				RefColumns: []*schema.Column{OrdersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CartsTable,
 		CartItemsTable,
 		ItemsTable,
+		OrdersTable,
+		OrderItemsTable,
 		PasswordsTable,
+		PaymentsTable,
 		UsersTable,
 	}
 )
@@ -114,6 +187,10 @@ var (
 func init() {
 	CartsTable.ForeignKeys[0].RefTable = UsersTable
 	CartItemsTable.ForeignKeys[0].RefTable = CartsTable
-	CartItemsTable.ForeignKeys[1].RefTable = ItemsTable
+	ItemsTable.ForeignKeys[0].RefTable = CartItemsTable
+	OrderItemsTable.ForeignKeys[0].RefTable = OrdersTable
+	OrderItemsTable.ForeignKeys[1].RefTable = ItemsTable
 	PasswordsTable.ForeignKeys[0].RefTable = UsersTable
+	PaymentsTable.ForeignKeys[0].RefTable = OrdersTable
+	UsersTable.ForeignKeys[0].RefTable = OrdersTable
 }
