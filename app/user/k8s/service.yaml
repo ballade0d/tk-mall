@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mall-order
+  name: mall-user
 spec:
   selector:
-    app: mall-order
+    app: mall-user
   ports:
-    - port: 50020
-      targetPort: 50020
+    - port: 50030
+      targetPort: 50030
   clusterIP: None

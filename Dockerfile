@@ -22,3 +22,8 @@ FROM alpine:3.17 AS order-service
 COPY --from=builder /app/config.toml /
 COPY --from=builder /app/bin/order-service /
 CMD ["./order-service"]
+
+FROM alpine:3.17 AS order-service
+COPY --from=builder /app/config.toml /
+COPY --from=builder /app/bin/user-service /
+CMD ["./user-service"]
