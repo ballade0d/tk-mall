@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mall-user
+  name: mall-payment
 spec:
   replicas: 1  # 设置 Pod 的副本数
   selector:
     matchLabels:
-      app: mall-user
+      app: mall-payment
   template:
     metadata:
       labels:
-        app: mall-user
+        app: mall-payment
     spec:
       containers:
-        - name: mall-user
-          image: user-service:0.0.1
+        - name: mall-payment
+          image: payment-service:0.0.1
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 50040  # gRPC 服务的端口
+            - containerPort: 50030  # gRPC 服务的端口

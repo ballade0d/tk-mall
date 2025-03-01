@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+spec:
+  ports:
+    - port: 15672   # Web UI port
+      targetPort: 15672
+      name: http
+    - port: 5672    # AMQP port
+      targetPort: 5672
+      name: amqp
+  clusterIP: None  # For StatefulSet, this should be None to allow direct access to each pod
+  selector:
+    app: rabbitmq

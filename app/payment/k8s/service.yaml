@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mall-payment
+spec:
+  selector:
+    app: mall-payment
+  ports:
+    - port: 50030
+      targetPort: 50030
+  clusterIP: None

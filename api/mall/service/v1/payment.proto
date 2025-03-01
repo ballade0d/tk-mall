@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package api.mall.service.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "mall/api/mall/service/v1";
+
+service PaymentService {
+  rpc PayOrder(PayOrderRequest) returns (PayOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/payment/{order_id}/pay"
+      body: "*"
+    };
+  }
+}
+
+message PayOrderRequest {
+  int64 order_id = 1;
+}
+
+message PayOrderResponse {
+  Payment payment = 1;
+}
+
+message Payment {
+  int64 id = 1;
+  int64 order_id = 2;
+  float amount = 3;
+  string status = 4;
+}

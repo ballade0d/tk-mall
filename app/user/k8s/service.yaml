@@ -6,6 +6,6 @@ spec:
   selector:
     app: mall-user
   ports:
-    - port: 50030
-      targetPort: 50030
+    - port: 50040
+      targetPort: 50040
   clusterIP: None

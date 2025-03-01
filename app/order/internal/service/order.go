@@ -107,33 +107,3 @@ func (s *OrderService) GetOrder(ctx context.Context, req *v2.GetOrderRequest) (*
 		},
 	}, nil
 }
-
-func (s *OrderService) CreatePayment(ctx context.Context, req *v2.CreatePaymentRequest) (*v2.CreatePaymentResponse, error) {
-	p, err := s.orderRepo.CreatePayment(ctx, int(req.OrderId))
-	if err != nil {
-		return nil, err
-	}
-	return &v2.CreatePaymentResponse{
-		Payment: &v2.Payment{
-			Id:      int64(p.ID),
-			OrderId: int64(p.Edges.Order.ID),
-			Amount:  p.Amount,
-			Status:  string(p.Status),
-		},
-	}, nil
-}
-
-func (s *OrderService) PayOrder(ctx context.Context, req *v2.PayOrderRequest) (*v2.PayOrderResponse, error) {
-	p, err := s.orderRepo.PayOrder(ctx, int(req.PaymentId))
-	if err != nil {
-		return nil, err
-	}
-	return &v2.PayOrderResponse{
-		Payment: &v2.Payment{
-			Id:      int64(p.ID),
-			OrderId: int64(p.Edges.Order.ID),
-			Amount:  p.Amount,
-			Status:  string(p.Status),
-		},
-	}, nil
-}

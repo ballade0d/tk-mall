@@ -4,21 +4,21 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	v1 "mall/api/mall/service/v1"
-	"mall/app/order/internal/service"
+	"mall/app/payment/internal/service"
 
 	"net"
 )
 
-func NewGRPCServer(orderService *service.OrderService) *grpc.Server {
-	lis, err := net.Listen("tcp", ":50020")
+func NewGRPCServer(paymentService *service.PaymentService) *grpc.Server {
+	lis, err := net.Listen("tcp", ":50030")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
 
-	v1.RegisterOrderServiceServer(grpcServer, orderService)
+	v1.RegisterPaymentServiceServer(grpcServer, paymentService)
 
-	log.Println("grpc server start at :50020")
+	log.Println("grpc server start at :50030")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
