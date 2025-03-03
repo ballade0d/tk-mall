@@ -10,25 +10,30 @@ RUN GOPROXY=https://goproxy.cn GO111MODULE=on go mod download \
 
 FROM alpine:3.17 AS admin-service
 COPY --from=builder /app/config.toml /
+COPY --from=builder /app/scripts/* /
 COPY --from=builder /app/bin/admin-service /
 CMD ["./admin-service"]
 
 FROM alpine:3.17 AS gateway-service
 COPY --from=builder /app/config.toml /
+COPY --from=builder /app/scripts/* /
 COPY --from=builder /app/bin/gateway-service /
 CMD ["./gateway-service"]
 
 FROM alpine:3.17 AS order-service
 COPY --from=builder /app/config.toml /
+COPY --from=builder /app/scripts/* /
 COPY --from=builder /app/bin/order-service /
 CMD ["./order-service"]
 
 FROM alpine:3.17 AS payment-service
 COPY --from=builder /app/config.toml /
+COPY --from=builder /app/scripts/* /
 COPY --from=builder /app/bin/payment-service /
 CMD ["./payment-service"]
 
 FROM alpine:3.17 AS user-service
 COPY --from=builder /app/config.toml /
+COPY --from=builder /app/scripts/* /
 COPY --from=builder /app/bin/user-service /
 CMD ["./user-service"]

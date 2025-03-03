@@ -17,7 +17,7 @@ func (Item) Fields() []ent.Field {
 		field.String("name"),
 		field.Text("description"),
 		field.Float32("price"),
-		field.Int("stock"),
+		field.Int("stock").Default(0),
 	}
 }
 

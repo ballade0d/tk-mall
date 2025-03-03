@@ -14,11 +14,17 @@ type ItemService struct {
 }
 
 func NewItemService(data *data.Data) *ItemService {
-	adminClient, err := grpc.NewClient(data.GetConfig().Services.AdminService, grpc.WithInsecure())
+	adminClient, err := grpc.NewClient(data.GetConfig().Services.AdminService,
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(claimsClientInterceptor),
+	)
 	if err != nil {
 		panic(err)
 	}
-	userClient, err := grpc.NewClient(data.GetConfig().Services.UserService, grpc.WithInsecure())
+	userClient, err := grpc.NewClient(data.GetConfig().Services.UserService,
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(claimsClientInterceptor),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -46,6 +52,10 @@ func (s *ItemService) AddStock(ctx context.Context, req *pb.AddStockRequest) (*p
 
 func (s *ItemService) GetItem(ctx context.Context, req *pb.GetItemRequest) (*pb.GetItemResponse, error) {
 	return s.user.GetItem(ctx, req)
+}
+
+func (s *ItemService) ListItems(ctx context.Context, req *pb.ListItemsRequest) (*pb.ListItemsResponse, error) {
+	return s.admin.ListItems(ctx, req)
 }
 
 func (s *ItemService) SearchItems(ctx context.Context, req *pb.SearchItemsRequest) (*pb.SearchItemsResponse, error) {

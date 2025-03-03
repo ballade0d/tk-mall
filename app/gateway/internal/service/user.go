@@ -13,19 +13,21 @@ import (
 
 type UserService struct {
 	pb.UnimplementedUserServiceServer
-	userRepo     *data.UserRepo
+	cartRepo     *data.CartRepo
 	passwordRepo *data.PasswordRepo
+	userRepo     *data.UserRepo
 }
 
-func NewUserService(userRepo *data.UserRepo, passwordRepo *data.PasswordRepo) *UserService {
+func NewUserService(cartRepo *data.CartRepo, passwordRepo *data.PasswordRepo, userRepo *data.UserRepo) *UserService {
 	return &UserService{
-		userRepo:     userRepo,
+		cartRepo:     cartRepo,
 		passwordRepo: passwordRepo,
+		userRepo:     userRepo,
 	}
 }
 
 func (s *UserService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	id := ctx.Value("claims").(*util.Claims).UserId
+	id := ctx.Value("claims").(util.Claims).UserId
 	usr, err := s.userRepo.FindUserByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -89,6 +91,10 @@ func (s *UserService) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 		Email: req.Email,
 		Role:  "user",
 	}, pwd)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.cartRepo.CreateCart(ctx, usr.ID)
 	if err != nil {
 		return nil, err
 	}

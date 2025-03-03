@@ -32,7 +32,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
-	UserColumn = "order_user"
+	UserColumn = "user_order"
 	// ItemsTable is the table that holds the items relation/edge.
 	ItemsTable = "order_items"
 	// ItemsInverseTable is the table name for the OrderItem entity.
@@ -59,7 +59,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "orders"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"order_user",
+	"user_order",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -150,17 +150,24 @@ func ByItems(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByPaymentField orders the results by payment field.
-func ByPaymentField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByPaymentCount orders the results by payment count.
+func ByPaymentCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPaymentStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newPaymentStep(), opts...)
+	}
+}
+
+// ByPayment orders the results by payment terms.
+func ByPayment(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPaymentStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, UserTable, UserColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
 	)
 }
 func newItemsStep() *sqlgraph.Step {
@@ -174,6 +181,6 @@ func newPaymentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PaymentInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, PaymentTable, PaymentColumn),
+		sqlgraph.Edge(sqlgraph.O2M, false, PaymentTable, PaymentColumn),
 	)
 }

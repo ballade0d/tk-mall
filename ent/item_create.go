@@ -43,6 +43,14 @@ func (ic *ItemCreate) SetStock(i int) *ItemCreate {
 	return ic
 }
 
+// SetNillableStock sets the "stock" field if the given value is not nil.
+func (ic *ItemCreate) SetNillableStock(i *int) *ItemCreate {
+	if i != nil {
+		ic.SetStock(*i)
+	}
+	return ic
+}
+
 // SetID sets the "id" field.
 func (ic *ItemCreate) SetID(i int) *ItemCreate {
 	ic.mutation.SetID(i)
@@ -56,6 +64,7 @@ func (ic *ItemCreate) Mutation() *ItemMutation {
 
 // Save creates the Item in the database.
 func (ic *ItemCreate) Save(ctx context.Context) (*Item, error) {
+	ic.defaults()
 	return withHooks(ctx, ic.sqlSave, ic.mutation, ic.hooks)
 }
 
@@ -78,6 +87,14 @@ func (ic *ItemCreate) Exec(ctx context.Context) error {
 func (ic *ItemCreate) ExecX(ctx context.Context) {
 	if err := ic.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (ic *ItemCreate) defaults() {
+	if _, ok := ic.mutation.Stock(); !ok {
+		v := item.DefaultStock
+		ic.mutation.SetStock(v)
 	}
 }
 
@@ -164,6 +181,7 @@ func (icb *ItemCreateBulk) Save(ctx context.Context) ([]*Item, error) {
 	for i := range icb.builders {
 		func(i int, root context.Context) {
 			builder := icb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ItemMutation)
 				if !ok {

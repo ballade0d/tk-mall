@@ -36,9 +36,11 @@ type UserEdges struct {
 	Password *Password `json:"password,omitempty"`
 	// Cart holds the value of the cart edge.
 	Cart *Cart `json:"cart,omitempty"`
+	// Order holds the value of the order edge.
+	Order []*Order `json:"order,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // PasswordOrErr returns the Password value or an error if the edge
@@ -61,6 +63,15 @@ func (e UserEdges) CartOrErr() (*Cart, error) {
 		return nil, &NotFoundError{label: cart.Label}
 	}
 	return nil, &NotLoadedError{edge: "cart"}
+}
+
+// OrderOrErr returns the Order value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) OrderOrErr() ([]*Order, error) {
+	if e.loadedTypes[2] {
+		return e.Order, nil
+	}
+	return nil, &NotLoadedError{edge: "order"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -132,6 +143,11 @@ func (u *User) QueryPassword() *PasswordQuery {
 // QueryCart queries the "cart" edge of the User entity.
 func (u *User) QueryCart() *CartQuery {
 	return NewUserClient(u.config).QueryCart(u)
+}
+
+// QueryOrder queries the "order" edge of the User entity.
+func (u *User) QueryOrder() *OrderQuery {
+	return NewUserClient(u.config).QueryOrder(u)
 }
 
 // Update returns a builder for updating this User.

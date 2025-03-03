@@ -24,6 +24,7 @@ const (
 	ItemService_EditItem_FullMethodName    = "/api.mall.service.v1.ItemService/EditItem"
 	ItemService_AddStock_FullMethodName    = "/api.mall.service.v1.ItemService/AddStock"
 	ItemService_GetItem_FullMethodName     = "/api.mall.service.v1.ItemService/GetItem"
+	ItemService_ListItems_FullMethodName   = "/api.mall.service.v1.ItemService/ListItems"
 	ItemService_SearchItems_FullMethodName = "/api.mall.service.v1.ItemService/SearchItems"
 )
 
@@ -36,6 +37,7 @@ type ItemServiceClient interface {
 	EditItem(ctx context.Context, in *EditItemRequest, opts ...grpc.CallOption) (*EditItemResponse, error)
 	AddStock(ctx context.Context, in *AddStockRequest, opts ...grpc.CallOption) (*AddStockResponse, error)
 	GetItem(ctx context.Context, in *GetItemRequest, opts ...grpc.CallOption) (*GetItemResponse, error)
+	ListItems(ctx context.Context, in *ListItemsRequest, opts ...grpc.CallOption) (*ListItemsResponse, error)
 	SearchItems(ctx context.Context, in *SearchItemsRequest, opts ...grpc.CallOption) (*SearchItemsResponse, error)
 }
 
@@ -97,6 +99,16 @@ func (c *itemServiceClient) GetItem(ctx context.Context, in *GetItemRequest, opt
 	return out, nil
 }
 
+func (c *itemServiceClient) ListItems(ctx context.Context, in *ListItemsRequest, opts ...grpc.CallOption) (*ListItemsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListItemsResponse)
+	err := c.cc.Invoke(ctx, ItemService_ListItems_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *itemServiceClient) SearchItems(ctx context.Context, in *SearchItemsRequest, opts ...grpc.CallOption) (*SearchItemsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SearchItemsResponse)
@@ -116,6 +128,7 @@ type ItemServiceServer interface {
 	EditItem(context.Context, *EditItemRequest) (*EditItemResponse, error)
 	AddStock(context.Context, *AddStockRequest) (*AddStockResponse, error)
 	GetItem(context.Context, *GetItemRequest) (*GetItemResponse, error)
+	ListItems(context.Context, *ListItemsRequest) (*ListItemsResponse, error)
 	SearchItems(context.Context, *SearchItemsRequest) (*SearchItemsResponse, error)
 	mustEmbedUnimplementedItemServiceServer()
 }
@@ -141,6 +154,9 @@ func (UnimplementedItemServiceServer) AddStock(context.Context, *AddStockRequest
 }
 func (UnimplementedItemServiceServer) GetItem(context.Context, *GetItemRequest) (*GetItemResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetItem not implemented")
+}
+func (UnimplementedItemServiceServer) ListItems(context.Context, *ListItemsRequest) (*ListItemsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListItems not implemented")
 }
 func (UnimplementedItemServiceServer) SearchItems(context.Context, *SearchItemsRequest) (*SearchItemsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchItems not implemented")
@@ -256,6 +272,24 @@ func _ItemService_GetItem_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ItemService_ListItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListItemsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).ListItems(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_ListItems_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).ListItems(ctx, req.(*ListItemsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ItemService_SearchItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchItemsRequest)
 	if err := dec(in); err != nil {
@@ -300,6 +334,10 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetItem",
 			Handler:    _ItemService_GetItem_Handler,
+		},
+		{
+			MethodName: "ListItems",
+			Handler:    _ItemService_ListItems_Handler,
 		},
 		{
 			MethodName: "SearchItems",

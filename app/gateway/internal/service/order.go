@@ -13,7 +13,10 @@ type OrderService struct {
 }
 
 func NewOrderService(data *data.Data) *OrderService {
-	grpcClient, err := grpc.NewClient(data.GetConfig().Services.OrderService, grpc.WithInsecure())
+	grpcClient, err := grpc.NewClient(data.GetConfig().Services.OrderService,
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(claimsClientInterceptor),
+	)
 	if err != nil {
 		panic(err)
 	}

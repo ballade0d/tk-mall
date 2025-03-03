@@ -75,7 +75,7 @@ func (pq *PaymentQuery) QueryOrder() *OrderQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(payment.Table, payment.FieldID, selector),
 			sqlgraph.To(order.Table, order.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, payment.OrderTable, payment.OrderColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, payment.OrderTable, payment.OrderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil

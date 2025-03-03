@@ -29,9 +29,10 @@ func wireApp() (*grpc.Server, error) {
 	itemService := service.NewItemService(dataData)
 	orderService := service.NewOrderService(dataData)
 	paymentService := service.NewPaymentService(dataData)
-	userRepo := data.NewUserRepo(dataData)
+	cartRepo := data.NewCartRepo(dataData)
 	passwordRepo := data.NewPasswordRepo(dataData)
-	userService := service.NewUserService(userRepo, passwordRepo)
+	userRepo := data.NewUserRepo(dataData)
+	userService := service.NewUserService(cartRepo, passwordRepo, userRepo)
 	grpcServer := server.NewGRPCServer(cartService, itemService, orderService, paymentService, userService)
 	return grpcServer, nil
 }

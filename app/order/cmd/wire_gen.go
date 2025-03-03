@@ -25,8 +25,9 @@ func wireApp() (*grpc.Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	itemRepo := data.NewItemRepo(dataData)
 	orderRepo := data.NewOrderRepo(dataData)
-	orderService := service.NewOrderService(orderRepo)
+	orderService := service.NewOrderService(itemRepo, orderRepo)
 	grpcServer := server.NewGRPCServer(configConfig, orderService)
 	return grpcServer, nil
 }

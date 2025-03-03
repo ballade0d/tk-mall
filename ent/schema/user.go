@@ -26,5 +26,6 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("password", Password.Type).Unique(),
 		edge.To("cart", Cart.Type).Unique(),
+		edge.To("order", Order.Type),
 	}
 }

@@ -1521,7 +1521,8 @@ type OrderMutation struct {
 	items          map[int]struct{}
 	removeditems   map[int]struct{}
 	cleareditems   bool
-	payment        *int
+	payment        map[int]struct{}
+	removedpayment map[int]struct{}
 	clearedpayment bool
 	done           bool
 	oldValue       func(context.Context) (*Order, error)
@@ -1791,9 +1792,14 @@ func (m *OrderMutation) ResetItems() {
 	m.removeditems = nil
 }
 
-// SetPaymentID sets the "payment" edge to the Payment entity by id.
-func (m *OrderMutation) SetPaymentID(id int) {
-	m.payment = &id
+// AddPaymentIDs adds the "payment" edge to the Payment entity by ids.
+func (m *OrderMutation) AddPaymentIDs(ids ...int) {
+	if m.payment == nil {
+		m.payment = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.payment[ids[i]] = struct{}{}
+	}
 }
 
 // ClearPayment clears the "payment" edge to the Payment entity.
@@ -1806,20 +1812,29 @@ func (m *OrderMutation) PaymentCleared() bool {
 	return m.clearedpayment
 }
 
-// PaymentID returns the "payment" edge ID in the mutation.
-func (m *OrderMutation) PaymentID() (id int, exists bool) {
-	if m.payment != nil {
-		return *m.payment, true
+// RemovePaymentIDs removes the "payment" edge to the Payment entity by IDs.
+func (m *OrderMutation) RemovePaymentIDs(ids ...int) {
+	if m.removedpayment == nil {
+		m.removedpayment = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.payment, ids[i])
+		m.removedpayment[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPayment returns the removed IDs of the "payment" edge to the Payment entity.
+func (m *OrderMutation) RemovedPaymentIDs() (ids []int) {
+	for id := range m.removedpayment {
+		ids = append(ids, id)
 	}
 	return
 }
 
 // PaymentIDs returns the "payment" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// PaymentID instead. It exists only for internal usage by the builders.
 func (m *OrderMutation) PaymentIDs() (ids []int) {
-	if id := m.payment; id != nil {
-		ids = append(ids, *id)
+	for id := range m.payment {
+		ids = append(ids, id)
 	}
 	return
 }
@@ -1828,6 +1843,7 @@ func (m *OrderMutation) PaymentIDs() (ids []int) {
 func (m *OrderMutation) ResetPayment() {
 	m.payment = nil
 	m.clearedpayment = false
+	m.removedpayment = nil
 }
 
 // Where appends a list predicates to the OrderMutation builder.
@@ -2008,9 +2024,11 @@ func (m *OrderMutation) AddedIDs(name string) []ent.Value {
 		}
 		return ids
 	case order.EdgePayment:
-		if id := m.payment; id != nil {
-			return []ent.Value{*id}
+		ids := make([]ent.Value, 0, len(m.payment))
+		for id := range m.payment {
+			ids = append(ids, id)
 		}
+		return ids
 	}
 	return nil
 }
@@ -2020,6 +2038,9 @@ func (m *OrderMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 3)
 	if m.removeditems != nil {
 		edges = append(edges, order.EdgeItems)
+	}
+	if m.removedpayment != nil {
+		edges = append(edges, order.EdgePayment)
 	}
 	return edges
 }
@@ -2031,6 +2052,12 @@ func (m *OrderMutation) RemovedIDs(name string) []ent.Value {
 	case order.EdgeItems:
 		ids := make([]ent.Value, 0, len(m.removeditems))
 		for id := range m.removeditems {
+			ids = append(ids, id)
+		}
+		return ids
+	case order.EdgePayment:
+		ids := make([]ent.Value, 0, len(m.removedpayment))
+		for id := range m.removedpayment {
 			ids = append(ids, id)
 		}
 		return ids
@@ -2073,9 +2100,6 @@ func (m *OrderMutation) ClearEdge(name string) error {
 	switch name {
 	case order.EdgeUser:
 		m.ClearUser()
-		return nil
-	case order.EdgePayment:
-		m.ClearPayment()
 		return nil
 	}
 	return fmt.Errorf("unknown Order unique edge %s", name)
@@ -3575,6 +3599,9 @@ type UserMutation struct {
 	clearedpassword bool
 	cart            *int
 	clearedcart     bool
+	_order          map[int]struct{}
+	removed_order   map[int]struct{}
+	cleared_order   bool
 	done            bool
 	oldValue        func(context.Context) (*User, error)
 	predicates      []predicate.User
@@ -3870,6 +3897,60 @@ func (m *UserMutation) ResetCart() {
 	m.clearedcart = false
 }
 
+// AddOrderIDs adds the "order" edge to the Order entity by ids.
+func (m *UserMutation) AddOrderIDs(ids ...int) {
+	if m._order == nil {
+		m._order = make(map[int]struct{})
+	}
+	for i := range ids {
+		m._order[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOrder clears the "order" edge to the Order entity.
+func (m *UserMutation) ClearOrder() {
+	m.cleared_order = true
+}
+
+// OrderCleared reports if the "order" edge to the Order entity was cleared.
+func (m *UserMutation) OrderCleared() bool {
+	return m.cleared_order
+}
+
+// RemoveOrderIDs removes the "order" edge to the Order entity by IDs.
+func (m *UserMutation) RemoveOrderIDs(ids ...int) {
+	if m.removed_order == nil {
+		m.removed_order = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m._order, ids[i])
+		m.removed_order[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOrder returns the removed IDs of the "order" edge to the Order entity.
+func (m *UserMutation) RemovedOrderIDs() (ids []int) {
+	for id := range m.removed_order {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OrderIDs returns the "order" edge IDs in the mutation.
+func (m *UserMutation) OrderIDs() (ids []int) {
+	for id := range m._order {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOrder resets all changes to the "order" edge.
+func (m *UserMutation) ResetOrder() {
+	m._order = nil
+	m.cleared_order = false
+	m.removed_order = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -4037,12 +4118,15 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.password != nil {
 		edges = append(edges, user.EdgePassword)
 	}
 	if m.cart != nil {
 		edges = append(edges, user.EdgeCart)
+	}
+	if m._order != nil {
+		edges = append(edges, user.EdgeOrder)
 	}
 	return edges
 }
@@ -4059,30 +4143,50 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 		if id := m.cart; id != nil {
 			return []ent.Value{*id}
 		}
+	case user.EdgeOrder:
+		ids := make([]ent.Value, 0, len(m._order))
+		for id := range m._order {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.removed_order != nil {
+		edges = append(edges, user.EdgeOrder)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *UserMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case user.EdgeOrder:
+		ids := make([]ent.Value, 0, len(m.removed_order))
+		for id := range m.removed_order {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedpassword {
 		edges = append(edges, user.EdgePassword)
 	}
 	if m.clearedcart {
 		edges = append(edges, user.EdgeCart)
+	}
+	if m.cleared_order {
+		edges = append(edges, user.EdgeOrder)
 	}
 	return edges
 }
@@ -4095,6 +4199,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedpassword
 	case user.EdgeCart:
 		return m.clearedcart
+	case user.EdgeOrder:
+		return m.cleared_order
 	}
 	return false
 }
@@ -4122,6 +4228,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeCart:
 		m.ResetCart()
+		return nil
+	case user.EdgeOrder:
+		m.ResetOrder()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

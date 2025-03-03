@@ -24,7 +24,6 @@ BIN_DIR := ./bin
 build:
 	@echo "Building..."
 	@make build-admin
-	@make build-callback
 	@make build-gateway
 	@make build-order
 	@make build-payment

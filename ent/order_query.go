@@ -80,7 +80,7 @@ func (oq *OrderQuery) QueryUser() *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(order.Table, order.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, order.UserTable, order.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, order.UserTable, order.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -124,7 +124,7 @@ func (oq *OrderQuery) QueryPayment() *PaymentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(order.Table, order.FieldID, selector),
 			sqlgraph.To(payment.Table, payment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, order.PaymentTable, order.PaymentColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, order.PaymentTable, order.PaymentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -489,8 +489,9 @@ func (oq *OrderQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Order,
 		}
 	}
 	if query := oq.withPayment; query != nil {
-		if err := oq.loadPayment(ctx, query, nodes, nil,
-			func(n *Order, e *Payment) { n.Edges.Payment = e }); err != nil {
+		if err := oq.loadPayment(ctx, query, nodes,
+			func(n *Order) { n.Edges.Payment = []*Payment{} },
+			func(n *Order, e *Payment) { n.Edges.Payment = append(n.Edges.Payment, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -501,10 +502,10 @@ func (oq *OrderQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*O
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Order)
 	for i := range nodes {
-		if nodes[i].order_user == nil {
+		if nodes[i].user_order == nil {
 			continue
 		}
-		fk := *nodes[i].order_user
+		fk := *nodes[i].user_order
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -521,7 +522,7 @@ func (oq *OrderQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*O
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "order_user" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_order" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -566,6 +567,9 @@ func (oq *OrderQuery) loadPayment(ctx context.Context, query *PaymentQuery, node
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
 	}
 	query.withFKs = true
 	query.Where(predicate.Payment(func(s *sql.Selector) {

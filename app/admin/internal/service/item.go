@@ -70,3 +70,21 @@ func (s *ItemService) AddStock(ctx context.Context, req *pb.AddStockRequest) (*p
 		},
 	}, nil
 }
+
+func (s *ItemService) ListItems(ctx context.Context, req *pb.ListItemsRequest) (*pb.ListItemsResponse, error) {
+	items, err := s.itemRepo.ListItems(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var pbItems []*pb.Item
+	for _, item := range items {
+		pbItems = append(pbItems, &pb.Item{
+			Id:          int64(item.ID),
+			Name:        item.Name,
+			Description: item.Description,
+			Price:       item.Price,
+			Stock:       int64(item.Stock),
+		})
+	}
+	return &pb.ListItemsResponse{Items: pbItems}, nil
+}

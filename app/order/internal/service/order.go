@@ -10,36 +10,37 @@ import (
 
 type OrderService struct {
 	pb.UnimplementedOrderServiceServer
-	orderRepo *data.OrderRepo
 	itemRepo  *data.ItemRepo
+	orderRepo *data.OrderRepo
 }
 
-func NewOrderService(orderRepo *data.OrderRepo) *OrderService {
+func NewOrderService(itemRepo *data.ItemRepo, orderRepo *data.OrderRepo) *OrderService {
 	return &OrderService{
+		itemRepo:  itemRepo,
 		orderRepo: orderRepo,
 	}
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*pb.CreateOrderResponse, error) {
-	usr := ctx.Value("claims").(*util.Claims).UserId
+	id := ctx.Value("claims").(util.Claims).UserId
 	err := s.itemRepo.CheckAndReduceStock(ctx, req.Items)
 	if err != nil {
 		return nil, err
 	}
-	o, err := s.orderRepo.CreateOrder(ctx, usr, req.Address, req.Items)
+	o, err := s.orderRepo.CreateOrder(ctx, id, req.Address, req.Items)
 	if err != nil {
 		return nil, err
 	}
 	items := make([]*pb.OrderItem, 0)
-	for _, item := range o.Edges.Items {
-		i, err := item.QueryItem().Only(ctx)
+	for _, oi := range o.Edges.Items {
+		i, err := oi.QueryItem().Only(ctx)
 		if err != nil {
 			return nil, err
 		}
 		items = append(items, &pb.OrderItem{
-			Id:        int64(item.ID),
+			Id:        int64(oi.ID),
 			ProductId: int64(i.ID),
-			Quantity:  int64(item.Quantity),
+			Quantity:  int64(oi.Quantity),
 		})
 	}
 	return &pb.CreateOrderResponse{

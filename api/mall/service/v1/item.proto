@@ -8,19 +8,31 @@ option go_package = "mall/api/mall/service/v1";
 
 service ItemService {
   rpc CreateItem(CreateItemRequest) returns (CreateItemResponse) {
-    option (google.api.http) = {post: "/v1/item"};
+    option (google.api.http) = {
+      post: "/v1/item"
+      body: "*"
+    };
   }
   rpc DeleteItem(DeleteItemRequest) returns (DeleteItemResponse) {
-    option (google.api.http) = {delete: "/v1/item"};
+    option (google.api.http) = {delete: "/v1/item/{id}"};
   }
   rpc EditItem(EditItemRequest) returns (EditItemResponse) {
-    option (google.api.http) = {put: "/v1/item"};
+    option (google.api.http) = {
+      put: "/v1/item"
+      body: "*"
+    };
   }
   rpc AddStock(AddStockRequest) returns (AddStockResponse) {
-    option (google.api.http) = {post: "/v1/item/stock"};
+    option (google.api.http) = {
+      post: "/v1/item/stock"
+      body: "*"
+    };
   }
   rpc GetItem(GetItemRequest) returns (GetItemResponse) {
     option (google.api.http) = {get: "/v1/item/{id}"};
+  }
+  rpc ListItems(ListItemsRequest) returns (ListItemsResponse) {
+    option (google.api.http) = {get: "/v1/items"};
   }
   rpc SearchItems(SearchItemsRequest) returns (SearchItemsResponse) {
     option (google.api.http) = {get: "/v1/item"};
@@ -71,6 +83,12 @@ message GetItemRequest {
 
 message GetItemResponse {
   Item item = 1;
+}
+
+message ListItemsRequest {}
+
+message ListItemsResponse {
+  repeated Item items = 1;
 }
 
 message SearchItemsRequest {

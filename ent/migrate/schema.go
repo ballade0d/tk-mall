@@ -60,7 +60,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "price", Type: field.TypeFloat32},
-		{Name: "stock", Type: field.TypeInt},
+		{Name: "stock", Type: field.TypeInt, Default: 0},
 	}
 	// ItemsTable holds the schema information for the "items" table.
 	ItemsTable = &schema.Table{
@@ -73,7 +73,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "address", Type: field.TypeString},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "paid", "shipped", "delivered", "cancelled"}, Default: "pending"},
-		{Name: "order_user", Type: field.TypeInt},
+		{Name: "user_order", Type: field.TypeInt, Nullable: true},
 	}
 	// OrdersTable holds the schema information for the "orders" table.
 	OrdersTable = &schema.Table{
@@ -82,10 +82,10 @@ var (
 		PrimaryKey: []*schema.Column{OrdersColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "orders_users_user",
+				Symbol:     "orders_users_order",
 				Columns:    []*schema.Column{OrdersColumns[3]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -142,7 +142,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "amount", Type: field.TypeFloat32},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "paid", "failed"}, Default: "pending"},
-		{Name: "order_payment", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "order_payment", Type: field.TypeInt, Nullable: true},
 	}
 	// PaymentsTable holds the schema information for the "payments" table.
 	PaymentsTable = &schema.Table{

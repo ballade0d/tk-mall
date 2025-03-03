@@ -18,12 +18,13 @@ var permissions = map[string][]string{
 	"/api.mall.service.v1.ItemService/DeleteItem":     {"admin"},
 	"/api.mall.service.v1.ItemService/EditItem":       {"admin"},
 	"/api.mall.service.v1.ItemService/AddStock":       {"admin"},
+	"/api.mall.service.v1.ItemService/ListItems":      {"admin"},
 	"/api.mall.service.v1.CartService/GetCart":        {"user", "admin"},
 	"/api.mall.service.v1.CartService/AddToCart":      {"user", "admin"},
 	"/api.mall.service.v1.CartService/RemoveFromCart": {"user", "admin"},
 	"/api.mall.service.v1.CartService/ClearCart":      {"user", "admin"},
 	"/api.mall.service.v1.ItemService/GetItem":        {"user", "admin"},
-	"/api.mall.service.v1.ItemService/SearchItem":     {"user", "admin"},
+	"/api.mall.service.v1.ItemService/SearchItems":    {"user", "admin"},
 	"/api.mall.service.v1.OrderService/CreateOrder":   {"user", "admin"},
 	"/api.mall.service.v1.OrderService/GetOrderList":  {"user", "admin"},
 	"/api.mall.service.v1.OrderService/GetOrder":      {"user", "admin"},
@@ -64,7 +65,7 @@ func jwtAuthInterceptor(
 		return nil, fmt.Errorf("permission denied")
 	}
 
-	ctx = context.WithValue(ctx, "claims", claims)
+	ctx = context.WithValue(ctx, "claims", *claims)
 
 	return handler(ctx, req)
 }

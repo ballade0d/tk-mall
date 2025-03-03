@@ -14,13 +14,6 @@ type ItemRepo struct {
 	data *Data
 }
 
-type ESItem struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Price       float32 `json:"price"`
-}
-
 func NewItemRepo(data *Data) *ItemRepo {
 	return &ItemRepo{data: data}
 }

@@ -37,6 +37,14 @@ func (s *PaymentService) PayOrder(ctx context.Context, req *pb.PayOrderRequest) 
 			return nil, err
 		}
 	}
+	p, err = s.paymentRepo.GetPayment(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.paymentRepo.NotifyPayment(ctx, p)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.PayOrderResponse{
 		Payment: &pb.Payment{
 			Id:      int64(p.ID),

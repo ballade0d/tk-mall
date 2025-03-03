@@ -42,6 +42,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultStock holds the default value on creation for the "stock" field.
+	DefaultStock int
+)
+
 // OrderOption defines the ordering options for the Item queries.
 type OrderOption func(*sql.Selector)
 

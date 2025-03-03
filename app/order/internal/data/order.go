@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/rabbitmq/amqp091-go"
 	pb "mall/api/mall/service/v1"
 	"mall/ent"
@@ -22,24 +23,24 @@ func (r *OrderRepo) CreateOrder(ctx context.Context, userID int, address string,
 	if err != nil {
 		return nil, err
 	}
-	oi := make([]*ent.OrderItemCreate, 0)
 	for _, i := range items {
 		product, err := r.data.db.Item.Query().Where(item.IDEQ(int(i.ProductId))).Only(ctx)
 		if err != nil {
 			return nil, err
 		}
-		create := r.data.db.OrderItem.Create().SetOrder(o).SetItem(product).SetQuantity(int(i.Quantity)).SetPrice(product.Price)
-		oi = append(oi, create)
+		err = r.data.db.OrderItem.Create().SetOrder(o).SetItem(product).SetQuantity(int(i.Quantity)).SetPrice(product.Price).Exec(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
-	err = r.data.db.OrderItem.CreateBulk(oi...).Exec(ctx)
+	o, err = r.data.db.Order.Query().Where(order.IDEQ(o.ID)).WithItems().WithUser().Only(ctx)
 	if err != nil {
 		return nil, err
 	}
-	o, err = r.data.db.Order.Query().Where(order.IDEQ(o.ID)).WithItems().Only(ctx)
+	body, err := json.Marshal(o)
 	if err != nil {
 		return nil, err
 	}
-
 	err = r.data.mq.Publish(
 		"",
 		"order_queue",
@@ -47,7 +48,7 @@ func (r *OrderRepo) CreateOrder(ctx context.Context, userID int, address string,
 		false,
 		amqp091.Publishing{
 			ContentType: "application/json",
-			Body:        []byte(o.String()),
+			Body:        body,
 		})
 	return o, nil
 }
@@ -55,7 +56,7 @@ func (r *OrderRepo) CreateOrder(ctx context.Context, userID int, address string,
 func (r *OrderRepo) GetOrderList(ctx context.Context, size, page int) ([]*ent.Order, error) {
 	limit := size
 	offset := (page - 1) * size
-	return r.data.db.Order.Query().WithItems().Limit(limit).Offset(offset).All(ctx)
+	return r.data.db.Order.Query().WithItems().WithUser().Limit(limit).Offset(offset).All(ctx)
 }
 
 func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*ent.Order, error) {

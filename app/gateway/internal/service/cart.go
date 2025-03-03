@@ -13,7 +13,11 @@ type CartService struct {
 }
 
 func NewCartService(data *data.Data) *CartService {
-	grpcClient, err := grpc.NewClient(data.GetConfig().Services.UserService, grpc.WithInsecure())
+	grpcClient, err := grpc.NewClient(
+		data.GetConfig().Services.UserService,
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(claimsClientInterceptor),
+	)
 	if err != nil {
 		panic(err)
 	}

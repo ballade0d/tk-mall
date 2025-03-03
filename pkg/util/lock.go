@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/redis/go-redis/v9"
+	"log"
 	"os"
 	"time"
 )
@@ -16,7 +17,7 @@ type RedisLock struct {
 	waitQueue string // 等待队列
 }
 
-var file, _ = os.ReadFile("scripts/unlock.lua")
+var file, _ = os.ReadFile("scripts/release_lock.lua")
 var unlockScriptBLPOP = redis.NewScript(string(file))
 
 // NewRedisLock 创建锁
@@ -35,7 +36,7 @@ func NewRedisLock(client *redis.Client, productID int, ttl time.Duration) *Redis
 func (r *RedisLock) TryLock(ctx context.Context) bool {
 	success, err := r.client.SetNX(ctx, r.key, r.value, r.ttl).Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		return false
 	}
 	return success
@@ -45,7 +46,7 @@ func (r *RedisLock) TryLock(ctx context.Context) bool {
 func (r *RedisLock) Unlock(ctx context.Context) {
 	_, err := unlockScriptBLPOP.Run(ctx, r.client, []string{r.key, r.waitQueue}, r.value).Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 }
 
@@ -64,7 +65,7 @@ func (r *RedisLock) LockWithQueue(ctx context.Context, maxWait time.Duration) bo
 	defer func(sub *redis.PubSub) {
 		err := sub.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Fatal(err)
 		}
 	}(sub)
 

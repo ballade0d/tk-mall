@@ -13,7 +13,10 @@ type PaymentService struct {
 }
 
 func NewPaymentService(data *data.Data) *PaymentService {
-	grpcClient, err := grpc.NewClient(data.GetConfig().Services.PaymentService, grpc.WithInsecure())
+	grpcClient, err := grpc.NewClient(data.GetConfig().Services.PaymentService,
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(claimsClientInterceptor),
+	)
 	if err != nil {
 		panic(err)
 	}

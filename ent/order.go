@@ -5,7 +5,6 @@ package ent
 import (
 	"fmt"
 	"mall/ent/order"
-	"mall/ent/payment"
 	"mall/ent/user"
 	"strings"
 
@@ -25,7 +24,7 @@ type Order struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrderQuery when eager-loading is set.
 	Edges        OrderEdges `json:"edges"`
-	order_user   *int
+	user_order   *int
 	selectValues sql.SelectValues
 }
 
@@ -36,7 +35,7 @@ type OrderEdges struct {
 	// Items holds the value of the items edge.
 	Items []*OrderItem `json:"items,omitempty"`
 	// Payment holds the value of the payment edge.
-	Payment *Payment `json:"payment,omitempty"`
+	Payment []*Payment `json:"payment,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
@@ -63,12 +62,10 @@ func (e OrderEdges) ItemsOrErr() ([]*OrderItem, error) {
 }
 
 // PaymentOrErr returns the Payment value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e OrderEdges) PaymentOrErr() (*Payment, error) {
-	if e.Payment != nil {
+// was not loaded in eager-loading.
+func (e OrderEdges) PaymentOrErr() ([]*Payment, error) {
+	if e.loadedTypes[2] {
 		return e.Payment, nil
-	} else if e.loadedTypes[2] {
-		return nil, &NotFoundError{label: payment.Label}
 	}
 	return nil, &NotLoadedError{edge: "payment"}
 }
@@ -82,7 +79,7 @@ func (*Order) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case order.FieldAddress, order.FieldStatus:
 			values[i] = new(sql.NullString)
-		case order.ForeignKeys[0]: // order_user
+		case order.ForeignKeys[0]: // user_order
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -119,10 +116,10 @@ func (o *Order) assignValues(columns []string, values []any) error {
 			}
 		case order.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field order_user", value)
+				return fmt.Errorf("unexpected type %T for edge-field user_order", value)
 			} else if value.Valid {
-				o.order_user = new(int)
-				*o.order_user = int(value.Int64)
+				o.user_order = new(int)
+				*o.user_order = int(value.Int64)
 			}
 		default:
 			o.selectValues.Set(columns[i], values[i])

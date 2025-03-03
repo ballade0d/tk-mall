@@ -48,6 +48,14 @@ func (oc *OrderCreate) SetUserID(id int) *OrderCreate {
 	return oc
 }
 
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (oc *OrderCreate) SetNillableUserID(id *int) *OrderCreate {
+	if id != nil {
+		oc = oc.SetUserID(*id)
+	}
+	return oc
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (oc *OrderCreate) SetUser(u *User) *OrderCreate {
 	return oc.SetUserID(u.ID)
@@ -68,23 +76,19 @@ func (oc *OrderCreate) AddItems(o ...*OrderItem) *OrderCreate {
 	return oc.AddItemIDs(ids...)
 }
 
-// SetPaymentID sets the "payment" edge to the Payment entity by ID.
-func (oc *OrderCreate) SetPaymentID(id int) *OrderCreate {
-	oc.mutation.SetPaymentID(id)
+// AddPaymentIDs adds the "payment" edge to the Payment entity by IDs.
+func (oc *OrderCreate) AddPaymentIDs(ids ...int) *OrderCreate {
+	oc.mutation.AddPaymentIDs(ids...)
 	return oc
 }
 
-// SetNillablePaymentID sets the "payment" edge to the Payment entity by ID if the given value is not nil.
-func (oc *OrderCreate) SetNillablePaymentID(id *int) *OrderCreate {
-	if id != nil {
-		oc = oc.SetPaymentID(*id)
+// AddPayment adds the "payment" edges to the Payment entity.
+func (oc *OrderCreate) AddPayment(p ...*Payment) *OrderCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return oc
-}
-
-// SetPayment sets the "payment" edge to the Payment entity.
-func (oc *OrderCreate) SetPayment(p *Payment) *OrderCreate {
-	return oc.SetPaymentID(p.ID)
+	return oc.AddPaymentIDs(ids...)
 }
 
 // Mutation returns the OrderMutation object of the builder.
@@ -146,9 +150,6 @@ func (oc *OrderCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Order.status": %w`, err)}
 		}
 	}
-	if len(oc.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Order.user"`)}
-	}
 	return nil
 }
 
@@ -186,7 +187,7 @@ func (oc *OrderCreate) createSpec() (*Order, *sqlgraph.CreateSpec) {
 	if nodes := oc.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
 			Bidi:    false,
@@ -197,7 +198,7 @@ func (oc *OrderCreate) createSpec() (*Order, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.order_user = &nodes[0]
+		_node.user_order = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := oc.mutation.ItemsIDs(); len(nodes) > 0 {
@@ -218,7 +219,7 @@ func (oc *OrderCreate) createSpec() (*Order, *sqlgraph.CreateSpec) {
 	}
 	if nodes := oc.mutation.PaymentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   order.PaymentTable,
 			Columns: []string{order.PaymentColumn},

@@ -7,6 +7,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"mall/ent/cart"
+	"mall/ent/order"
 	"mall/ent/password"
 	"mall/ent/predicate"
 	"mall/ent/user"
@@ -27,6 +28,7 @@ type UserQuery struct {
 	predicates   []predicate.User
 	withPassword *PasswordQuery
 	withCart     *CartQuery
+	withOrder    *OrderQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +102,28 @@ func (uq *UserQuery) QueryCart() *CartQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(cart.Table, cart.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, user.CartTable, user.CartColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOrder chains the current query on the "order" edge.
+func (uq *UserQuery) QueryOrder() *OrderQuery {
+	query := (&OrderClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(order.Table, order.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OrderTable, user.OrderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -301,6 +325,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		predicates:   append([]predicate.User{}, uq.predicates...),
 		withPassword: uq.withPassword.Clone(),
 		withCart:     uq.withCart.Clone(),
+		withOrder:    uq.withOrder.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
@@ -326,6 +351,17 @@ func (uq *UserQuery) WithCart(opts ...func(*CartQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withCart = query
+	return uq
+}
+
+// WithOrder tells the query-builder to eager-load the nodes that are connected to
+// the "order" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithOrder(opts ...func(*OrderQuery)) *UserQuery {
+	query := (&OrderClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withOrder = query
 	return uq
 }
 
@@ -407,9 +443,10 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			uq.withPassword != nil,
 			uq.withCart != nil,
+			uq.withOrder != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -439,6 +476,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if query := uq.withCart; query != nil {
 		if err := uq.loadCart(ctx, query, nodes, nil,
 			func(n *User, e *Cart) { n.Edges.Cart = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withOrder; query != nil {
+		if err := uq.loadOrder(ctx, query, nodes,
+			func(n *User) { n.Edges.Order = []*Order{} },
+			func(n *User, e *Order) { n.Edges.Order = append(n.Edges.Order, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -496,6 +540,37 @@ func (uq *UserQuery) loadCart(ctx context.Context, query *CartQuery, nodes []*Us
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_cart" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadOrder(ctx context.Context, query *OrderQuery, nodes []*User, init func(*User), assign func(*User, *Order)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Order(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OrderColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_order
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_order" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_order" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

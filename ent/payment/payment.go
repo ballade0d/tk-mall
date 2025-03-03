@@ -114,6 +114,6 @@ func newOrderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OrderInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, OrderTable, OrderColumn),
+		sqlgraph.Edge(sqlgraph.M2O, true, OrderTable, OrderColumn),
 	)
 }

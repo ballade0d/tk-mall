@@ -4,6 +4,7 @@ package ent
 
 import (
 	"mall/ent/cartitem"
+	"mall/ent/item"
 	"mall/ent/order"
 	"mall/ent/orderitem"
 	"mall/ent/schema"
@@ -21,6 +22,12 @@ func init() {
 	cartitem.DefaultQuantity = cartitemDescQuantity.Default.(int)
 	// cartitem.QuantityValidator is a validator for the "quantity" field. It is called by the builders before save.
 	cartitem.QuantityValidator = cartitemDescQuantity.Validators[0].(func(int) error)
+	itemFields := schema.Item{}.Fields()
+	_ = itemFields
+	// itemDescStock is the schema descriptor for stock field.
+	itemDescStock := itemFields[4].Descriptor()
+	// item.DefaultStock holds the default value on creation for the stock field.
+	item.DefaultStock = itemDescStock.Default.(int)
 	orderFields := schema.Order{}.Fields()
 	_ = orderFields
 	// orderDescAddress is the schema descriptor for address field.

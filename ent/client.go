@@ -841,7 +841,7 @@ func (c *OrderClient) QueryUser(o *Order) *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(order.Table, order.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, order.UserTable, order.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, order.UserTable, order.UserColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil
@@ -873,7 +873,7 @@ func (c *OrderClient) QueryPayment(o *Order) *PaymentQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(order.Table, order.FieldID, id),
 			sqlgraph.To(payment.Table, payment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, order.PaymentTable, order.PaymentColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, order.PaymentTable, order.PaymentColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil
@@ -1336,7 +1336,7 @@ func (c *PaymentClient) QueryOrder(pa *Payment) *OrderQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(payment.Table, payment.FieldID, id),
 			sqlgraph.To(order.Table, order.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, payment.OrderTable, payment.OrderColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, payment.OrderTable, payment.OrderColumn),
 		)
 		fromV = sqlgraph.Neighbors(pa.driver.Dialect(), step)
 		return fromV, nil
@@ -1502,6 +1502,22 @@ func (c *UserClient) QueryCart(u *User) *CartQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(cart.Table, cart.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, user.CartTable, user.CartColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOrder queries the order edge of a User.
+func (c *UserClient) QueryOrder(u *User) *OrderQuery {
+	query := (&OrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(order.Table, order.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OrderTable, user.OrderColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

@@ -64,6 +64,14 @@ func (ou *OrderUpdate) SetUserID(id int) *OrderUpdate {
 	return ou
 }
 
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (ou *OrderUpdate) SetNillableUserID(id *int) *OrderUpdate {
+	if id != nil {
+		ou = ou.SetUserID(*id)
+	}
+	return ou
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (ou *OrderUpdate) SetUser(u *User) *OrderUpdate {
 	return ou.SetUserID(u.ID)
@@ -84,23 +92,19 @@ func (ou *OrderUpdate) AddItems(o ...*OrderItem) *OrderUpdate {
 	return ou.AddItemIDs(ids...)
 }
 
-// SetPaymentID sets the "payment" edge to the Payment entity by ID.
-func (ou *OrderUpdate) SetPaymentID(id int) *OrderUpdate {
-	ou.mutation.SetPaymentID(id)
+// AddPaymentIDs adds the "payment" edge to the Payment entity by IDs.
+func (ou *OrderUpdate) AddPaymentIDs(ids ...int) *OrderUpdate {
+	ou.mutation.AddPaymentIDs(ids...)
 	return ou
 }
 
-// SetNillablePaymentID sets the "payment" edge to the Payment entity by ID if the given value is not nil.
-func (ou *OrderUpdate) SetNillablePaymentID(id *int) *OrderUpdate {
-	if id != nil {
-		ou = ou.SetPaymentID(*id)
+// AddPayment adds the "payment" edges to the Payment entity.
+func (ou *OrderUpdate) AddPayment(p ...*Payment) *OrderUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return ou
-}
-
-// SetPayment sets the "payment" edge to the Payment entity.
-func (ou *OrderUpdate) SetPayment(p *Payment) *OrderUpdate {
-	return ou.SetPaymentID(p.ID)
+	return ou.AddPaymentIDs(ids...)
 }
 
 // Mutation returns the OrderMutation object of the builder.
@@ -135,10 +139,25 @@ func (ou *OrderUpdate) RemoveItems(o ...*OrderItem) *OrderUpdate {
 	return ou.RemoveItemIDs(ids...)
 }
 
-// ClearPayment clears the "payment" edge to the Payment entity.
+// ClearPayment clears all "payment" edges to the Payment entity.
 func (ou *OrderUpdate) ClearPayment() *OrderUpdate {
 	ou.mutation.ClearPayment()
 	return ou
+}
+
+// RemovePaymentIDs removes the "payment" edge to Payment entities by IDs.
+func (ou *OrderUpdate) RemovePaymentIDs(ids ...int) *OrderUpdate {
+	ou.mutation.RemovePaymentIDs(ids...)
+	return ou
+}
+
+// RemovePayment removes "payment" edges to Payment entities.
+func (ou *OrderUpdate) RemovePayment(p ...*Payment) *OrderUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ou.RemovePaymentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -180,9 +199,6 @@ func (ou *OrderUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Order.status": %w`, err)}
 		}
 	}
-	if ou.mutation.UserCleared() && len(ou.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Order.user"`)
-	}
 	return nil
 }
 
@@ -207,7 +223,7 @@ func (ou *OrderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ou.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
 			Bidi:    false,
@@ -220,7 +236,7 @@ func (ou *OrderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if nodes := ou.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
 			Bidi:    false,
@@ -280,7 +296,7 @@ func (ou *OrderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ou.mutation.PaymentCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   order.PaymentTable,
 			Columns: []string{order.PaymentColumn},
@@ -291,9 +307,25 @@ func (ou *OrderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := ou.mutation.RemovedPaymentIDs(); len(nodes) > 0 && !ou.mutation.PaymentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   order.PaymentTable,
+			Columns: []string{order.PaymentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(payment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := ou.mutation.PaymentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   order.PaymentTable,
 			Columns: []string{order.PaymentColumn},
@@ -361,6 +393,14 @@ func (ouo *OrderUpdateOne) SetUserID(id int) *OrderUpdateOne {
 	return ouo
 }
 
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (ouo *OrderUpdateOne) SetNillableUserID(id *int) *OrderUpdateOne {
+	if id != nil {
+		ouo = ouo.SetUserID(*id)
+	}
+	return ouo
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (ouo *OrderUpdateOne) SetUser(u *User) *OrderUpdateOne {
 	return ouo.SetUserID(u.ID)
@@ -381,23 +421,19 @@ func (ouo *OrderUpdateOne) AddItems(o ...*OrderItem) *OrderUpdateOne {
 	return ouo.AddItemIDs(ids...)
 }
 
-// SetPaymentID sets the "payment" edge to the Payment entity by ID.
-func (ouo *OrderUpdateOne) SetPaymentID(id int) *OrderUpdateOne {
-	ouo.mutation.SetPaymentID(id)
+// AddPaymentIDs adds the "payment" edge to the Payment entity by IDs.
+func (ouo *OrderUpdateOne) AddPaymentIDs(ids ...int) *OrderUpdateOne {
+	ouo.mutation.AddPaymentIDs(ids...)
 	return ouo
 }
 
-// SetNillablePaymentID sets the "payment" edge to the Payment entity by ID if the given value is not nil.
-func (ouo *OrderUpdateOne) SetNillablePaymentID(id *int) *OrderUpdateOne {
-	if id != nil {
-		ouo = ouo.SetPaymentID(*id)
+// AddPayment adds the "payment" edges to the Payment entity.
+func (ouo *OrderUpdateOne) AddPayment(p ...*Payment) *OrderUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return ouo
-}
-
-// SetPayment sets the "payment" edge to the Payment entity.
-func (ouo *OrderUpdateOne) SetPayment(p *Payment) *OrderUpdateOne {
-	return ouo.SetPaymentID(p.ID)
+	return ouo.AddPaymentIDs(ids...)
 }
 
 // Mutation returns the OrderMutation object of the builder.
@@ -432,10 +468,25 @@ func (ouo *OrderUpdateOne) RemoveItems(o ...*OrderItem) *OrderUpdateOne {
 	return ouo.RemoveItemIDs(ids...)
 }
 
-// ClearPayment clears the "payment" edge to the Payment entity.
+// ClearPayment clears all "payment" edges to the Payment entity.
 func (ouo *OrderUpdateOne) ClearPayment() *OrderUpdateOne {
 	ouo.mutation.ClearPayment()
 	return ouo
+}
+
+// RemovePaymentIDs removes the "payment" edge to Payment entities by IDs.
+func (ouo *OrderUpdateOne) RemovePaymentIDs(ids ...int) *OrderUpdateOne {
+	ouo.mutation.RemovePaymentIDs(ids...)
+	return ouo
+}
+
+// RemovePayment removes "payment" edges to Payment entities.
+func (ouo *OrderUpdateOne) RemovePayment(p ...*Payment) *OrderUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ouo.RemovePaymentIDs(ids...)
 }
 
 // Where appends a list predicates to the OrderUpdate builder.
@@ -490,9 +541,6 @@ func (ouo *OrderUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Order.status": %w`, err)}
 		}
 	}
-	if ouo.mutation.UserCleared() && len(ouo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Order.user"`)
-	}
 	return nil
 }
 
@@ -534,7 +582,7 @@ func (ouo *OrderUpdateOne) sqlSave(ctx context.Context) (_node *Order, err error
 	if ouo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
 			Bidi:    false,
@@ -547,7 +595,7 @@ func (ouo *OrderUpdateOne) sqlSave(ctx context.Context) (_node *Order, err error
 	if nodes := ouo.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: false,
+			Inverse: true,
 			Table:   order.UserTable,
 			Columns: []string{order.UserColumn},
 			Bidi:    false,
@@ -607,7 +655,7 @@ func (ouo *OrderUpdateOne) sqlSave(ctx context.Context) (_node *Order, err error
 	}
 	if ouo.mutation.PaymentCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   order.PaymentTable,
 			Columns: []string{order.PaymentColumn},
@@ -618,9 +666,25 @@ func (ouo *OrderUpdateOne) sqlSave(ctx context.Context) (_node *Order, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := ouo.mutation.RemovedPaymentIDs(); len(nodes) > 0 && !ouo.mutation.PaymentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   order.PaymentTable,
+			Columns: []string{order.PaymentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(payment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := ouo.mutation.PaymentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   order.PaymentTable,
 			Columns: []string{order.PaymentColumn},

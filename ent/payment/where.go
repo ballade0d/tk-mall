@@ -124,7 +124,7 @@ func HasOrder() predicate.Payment {
 	return predicate.Payment(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, OrderTable, OrderColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, OrderTable, OrderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

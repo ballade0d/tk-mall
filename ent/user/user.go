@@ -24,6 +24,8 @@ const (
 	EdgePassword = "password"
 	// EdgeCart holds the string denoting the cart edge name in mutations.
 	EdgeCart = "cart"
+	// EdgeOrder holds the string denoting the order edge name in mutations.
+	EdgeOrder = "order"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PasswordTable is the table that holds the password relation/edge.
@@ -40,6 +42,13 @@ const (
 	CartInverseTable = "carts"
 	// CartColumn is the table column denoting the cart relation/edge.
 	CartColumn = "user_cart"
+	// OrderTable is the table that holds the order relation/edge.
+	OrderTable = "orders"
+	// OrderInverseTable is the table name for the Order entity.
+	// It exists in this package in order to avoid circular dependency with the "order" package.
+	OrderInverseTable = "orders"
+	// OrderColumn is the table column denoting the order relation/edge.
+	OrderColumn = "user_order"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -119,6 +128,20 @@ func ByCartField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newCartStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByOrderCount orders the results by order count.
+func ByOrderCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOrderStep(), opts...)
+	}
+}
+
+// ByOrder orders the results by order terms.
+func ByOrder(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrderStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newPasswordStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -131,5 +154,12 @@ func newCartStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CartInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, CartTable, CartColumn),
+	)
+}
+func newOrderStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrderInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OrderTable, OrderColumn),
 	)
 }
