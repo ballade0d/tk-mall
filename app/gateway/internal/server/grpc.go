@@ -13,9 +13,22 @@ import (
 	"slices"
 )
 
-// /api.mall.service.v1.UserService/Register
-var routesNeedAuth = []string{
-	"/api.mall.service.v1.UserService/GetUser",
+var permissions = map[string][]string{
+	"/api.mall.service.v1.ItemService/CreateItem":     {"admin"},
+	"/api.mall.service.v1.ItemService/DeleteItem":     {"admin"},
+	"/api.mall.service.v1.ItemService/EditItem":       {"admin"},
+	"/api.mall.service.v1.ItemService/AddStock":       {"admin"},
+	"/api.mall.service.v1.CartService/GetCart":        {"user", "admin"},
+	"/api.mall.service.v1.CartService/AddToCart":      {"user", "admin"},
+	"/api.mall.service.v1.CartService/RemoveFromCart": {"user", "admin"},
+	"/api.mall.service.v1.CartService/ClearCart":      {"user", "admin"},
+	"/api.mall.service.v1.ItemService/GetItem":        {"user", "admin"},
+	"/api.mall.service.v1.ItemService/SearchItem":     {"user", "admin"},
+	"/api.mall.service.v1.OrderService/CreateOrder":   {"user", "admin"},
+	"/api.mall.service.v1.OrderService/GetOrderList":  {"user", "admin"},
+	"/api.mall.service.v1.OrderService/GetOrder":      {"user", "admin"},
+	"/api.mall.service.v1.PaymentService/PayOrder":    {"user", "admin"},
+	"/api.mall.service.v1.UserService/GetUser":        {"user", "admin"},
 }
 
 func jwtAuthInterceptor(
@@ -24,7 +37,7 @@ func jwtAuthInterceptor(
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (interface{}, error) {
-	if !slices.Contains(routesNeedAuth, info.FullMethod) {
+	if permissions[info.FullMethod] == nil {
 		return handler(ctx, req)
 	}
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -45,6 +58,10 @@ func jwtAuthInterceptor(
 	claims, err := util.VerifyJWT(tokenStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %v", err)
+	}
+
+	if !slices.Contains(permissions[info.FullMethod], claims.Role) {
+		return nil, fmt.Errorf("permission denied")
 	}
 
 	ctx = context.WithValue(ctx, "claims", claims)

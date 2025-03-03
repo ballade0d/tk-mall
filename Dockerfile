@@ -13,11 +13,6 @@ COPY --from=builder /app/config.toml /
 COPY --from=builder /app/bin/admin-service /
 CMD ["./admin-service"]
 
-FROM alpine:3.17 AS callback-service
-COPY --from=builder /app/config.toml /
-COPY --from=builder /app/bin/callback-service /
-CMD ["./callback-service"]
-
 FROM alpine:3.17 AS gateway-service
 COPY --from=builder /app/config.toml /
 COPY --from=builder /app/bin/gateway-service /
