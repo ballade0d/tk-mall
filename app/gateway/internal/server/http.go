@@ -15,11 +15,23 @@ func NewHTTPServer() {
 		grpc.WithInsecure(),
 	}
 
-	err := v1.RegisterUserServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
+	err := v1.RegisterCartServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
 	if err != nil {
 		log.Fatalf("failed to register gRPC gateway: %v", err)
 	}
 	err = v1.RegisterItemServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
+	if err != nil {
+		log.Fatalf("failed to register gRPC gateway: %v", err)
+	}
+	err = v1.RegisterOrderServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
+	if err != nil {
+		log.Fatalf("failed to register gRPC gateway: %v", err)
+	}
+	err = v1.RegisterPaymentServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
+	if err != nil {
+		log.Fatalf("failed to register gRPC gateway: %v", err)
+	}
+	err = v1.RegisterUserServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts)
 	if err != nil {
 		log.Fatalf("failed to register gRPC gateway: %v", err)
 	}

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mall-callback
+spec:
+  replicas: 1  # 设置 Pod 的副本数
+  selector:
+    matchLabels:
+      app: mall-callback
+  template:
+    metadata:
+      labels:
+        app: mall-callback
+    spec:
+      containers:
+        - name: mall-callback
+          image: callback-service:0.0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080

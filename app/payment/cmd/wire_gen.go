@@ -27,6 +27,6 @@ func wireApp() (*grpc.Server, error) {
 	}
 	paymentRepo := data.NewPaymentRepo(dataData)
 	paymentService := service.NewPaymentService(paymentRepo)
-	grpcServer := server.NewGRPCServer(paymentService)
+	grpcServer := server.NewGRPCServer(configConfig, paymentService)
 	return grpcServer, nil
 }

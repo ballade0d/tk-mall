@@ -28,11 +28,16 @@ type ElasticSearchConfig struct {
 	Indices   string   `toml:"indices"`
 }
 
+type RabbitMQConfig struct {
+	Addr string `toml:"addr"`
+}
+
 type Config struct {
 	Server        ServerConfig        `toml:"server"`
 	Database      DatabaseConfig      `toml:"database"`
 	Redis         RedisConfig         `toml:"redis"`
 	ElasticSearch ElasticSearchConfig `toml:"elasticsearch"`
+	RabbitMQ      RabbitMQConfig      `toml:"rabbitmq"`
 }
 
 var ProviderSet = wire.NewSet(NewConfig)
@@ -40,7 +45,7 @@ var ProviderSet = wire.NewSet(NewConfig)
 func NewConfig() (*Config, error) {
 	var conf Config
 	// 加载配置文件
-	_, err := toml.DecodeFile("config-local.toml", &conf)
+	_, err := toml.DecodeFile("config.toml", &conf)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err

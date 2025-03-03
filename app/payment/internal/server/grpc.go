@@ -4,12 +4,14 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	v1 "mall/api/mall/service/v1"
+	"mall/app/payment/internal/config"
 	"mall/app/payment/internal/service"
 
 	"net"
 )
 
-func NewGRPCServer(paymentService *service.PaymentService) *grpc.Server {
+func NewGRPCServer(conf *config.Config, paymentService *service.PaymentService) *grpc.Server {
+	NewRabbitMQServer(conf, paymentService)
 	lis, err := net.Listen("tcp", ":50030")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

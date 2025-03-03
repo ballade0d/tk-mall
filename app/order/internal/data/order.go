@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"github.com/rabbitmq/amqp091-go"
 	pb "mall/api/mall/service/v1"
 	"mall/ent"
 	"mall/ent/item"
@@ -12,8 +13,8 @@ type OrderRepo struct {
 	data *Data
 }
 
-func NewOrderRepo(data *Data) OrderRepo {
-	return OrderRepo{data: data}
+func NewOrderRepo(data *Data) *OrderRepo {
+	return &OrderRepo{data: data}
 }
 
 func (r *OrderRepo) CreateOrder(ctx context.Context, userID int, address string, items []*pb.OrderItem) (*ent.Order, error) {
@@ -38,6 +39,16 @@ func (r *OrderRepo) CreateOrder(ctx context.Context, userID int, address string,
 	if err != nil {
 		return nil, err
 	}
+
+	err = r.data.mq.Publish(
+		"",
+		"order_queue",
+		false,
+		false,
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        []byte(o.String()),
+		})
 	return o, nil
 }
 
@@ -49,4 +60,12 @@ func (r *OrderRepo) GetOrderList(ctx context.Context, size, page int) ([]*ent.Or
 
 func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*ent.Order, error) {
 	return r.data.db.Order.Query().Where(order.IDEQ(id)).WithItems().Only(ctx)
+}
+
+func (r *OrderRepo) UpdateOrderStatus(ctx context.Context, id int, status order.Status) error {
+	_, err := r.data.db.Order.UpdateOneID(id).SetStatus(status).Save(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }

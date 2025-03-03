@@ -21,3 +21,7 @@ spec:
               value: "passw0rd"
           ports:
             - containerPort: 3306
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc

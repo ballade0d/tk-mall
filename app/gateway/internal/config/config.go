@@ -29,8 +29,10 @@ type ElasticSearchConfig struct {
 }
 
 type ServicesConfig struct {
-	AdminService string `toml:"admin_service"`
-	OrderService string `toml:"order_service"`
+	AdminService   string `toml:"admin_service"`
+	OrderService   string `toml:"order_service"`
+	PaymentService string `toml:"payment_service"`
+	UserService    string `toml:"user_service"`
 }
 
 type Config struct {
@@ -46,7 +48,7 @@ var ProviderSet = wire.NewSet(NewConfig)
 func NewConfig() (*Config, error) {
 	var conf Config
 	// 加载配置文件
-	_, err := toml.DecodeFile("config-local.toml", &conf)
+	_, err := toml.DecodeFile("config.toml", &conf)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err

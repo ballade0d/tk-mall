@@ -8,10 +8,10 @@ import (
 
 type ItemService struct {
 	pb.UnimplementedItemServiceServer
-	itemRepo data.ItemRepo
+	itemRepo *data.ItemRepo
 }
 
-func NewItemService(itemRepo data.ItemRepo) *ItemService {
+func NewItemService(itemRepo *data.ItemRepo) *ItemService {
 	return &ItemService{itemRepo: itemRepo}
 }
 

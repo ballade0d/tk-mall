@@ -16,8 +16,8 @@ type ESItem struct {
 	Price       float32 `json:"price"`
 }
 
-func NewItemRepo(data *Data) ItemRepo {
-	return ItemRepo{data: data}
+func NewItemRepo(data *Data) *ItemRepo {
+	return &ItemRepo{data: data}
 }
 
 func (r *ItemRepo) indexItem(ctx context.Context, it *ent.Item) error {

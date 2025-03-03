@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package api.mall.service.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "mall/api/mall/service/v1";
+
+service CallbackService {
+  rpc Callback(CallbackRequest) returns (CallbackResponse) {
+    option (google.api.http) = {
+      post: "/v1/callback"
+      body: "*"
+    };
+  }
+}
+
+message CallbackRequest {
+  int64 id = 1;
+  string state = 2;
+}
+
+message CallbackResponse {
+  string code = 1;
+  string message = 2;
+}

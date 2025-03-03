@@ -16,7 +16,11 @@ addresses = ["http://elasticsearch:9200"]
 api_key = "ZWF4WDM1UUIxbWFmQVM1d0d6dDg6V290Q21saG1Rb3k3d1V2am5aaWVhQQ=="
 indices = "mall"
 
+[rabbitmq]
+addr = "amqp://guest:guest@rabbitmq-service:5672/"
+
 [services]
-admin_service = "admin-service.default.svc.cluster.local"
-order_service = "order-service.default.svc.cluster.local"
-user_service = "user-service.default.svc.cluster.local"
+admin_service = "mall-admin.default.svc.cluster.local:50010"
+order_service = "mall-order.default.svc.cluster.local:50020"
+payment_service = "mall-payment.default.svc.cluster.local:50030"
+user_service = "mall-user.default.svc.cluster.local:50040"

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"errors"
-	v2 "mall/api/mall/service/v1"
+	pb "mall/api/mall/service/v1"
 	"mall/app/gateway/internal/data"
 	u "mall/app/gateway/internal/util"
 	"mall/ent"
@@ -12,26 +12,26 @@ import (
 )
 
 type UserService struct {
-	v2.UnimplementedUserServiceServer
-	userRepo     data.UserRepo
-	passwordRepo data.PasswordRepo
+	pb.UnimplementedUserServiceServer
+	userRepo     *data.UserRepo
+	passwordRepo *data.PasswordRepo
 }
 
-func NewUserService(userRepo data.UserRepo, passwordRepo data.PasswordRepo) *UserService {
+func NewUserService(userRepo *data.UserRepo, passwordRepo *data.PasswordRepo) *UserService {
 	return &UserService{
 		userRepo:     userRepo,
 		passwordRepo: passwordRepo,
 	}
 }
 
-func (s *UserService) GetUser(ctx context.Context, req *v2.GetUserRequest) (*v2.GetUserResponse, error) {
+func (s *UserService) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	id := ctx.Value("claims").(*util.Claims).UserId
 	usr, err := s.userRepo.FindUserByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &v2.GetUserResponse{
-		User: &v2.User{
+	return &pb.GetUserResponse{
+		User: &pb.User{
 			Id:    int64(usr.ID),
 			Name:  usr.Name,
 			Email: usr.Email,
@@ -39,7 +39,7 @@ func (s *UserService) GetUser(ctx context.Context, req *v2.GetUserRequest) (*v2.
 	}, nil
 }
 
-func (s *UserService) Login(ctx context.Context, req *v2.LoginRequest) (*v2.LoginResponse, error) {
+func (s *UserService) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	usr, err := s.userRepo.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
@@ -57,8 +57,8 @@ func (s *UserService) Login(ctx context.Context, req *v2.LoginRequest) (*v2.Logi
 		return nil, err
 	}
 	if u.Verify(pwd.Password, req.Password) {
-		return &v2.LoginResponse{
-			Token: &v2.Token{
+		return &pb.LoginResponse{
+			Token: &pb.Token{
 				Token:        token,
 				RefreshToken: refreshToken,
 			},
@@ -67,7 +67,7 @@ func (s *UserService) Login(ctx context.Context, req *v2.LoginRequest) (*v2.Logi
 	return nil, nil
 }
 
-func (s *UserService) Register(ctx context.Context, req *v2.RegisterRequest) (*v2.RegisterResponse, error) {
+func (s *UserService) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	usr, err := s.userRepo.FindUserByEmail(ctx, req.Email)
 	var entErr *ent.NotFoundError
 	if !errors.As(err, &entErr) {
@@ -94,15 +94,15 @@ func (s *UserService) Register(ctx context.Context, req *v2.RegisterRequest) (*v
 	}
 	token, err := util.GenToken(usr, time.Duration(2)*time.Hour)
 	refreshToken, err := util.GenRefreshToken(usr, time.Duration(24)*time.Hour)
-	return &v2.RegisterResponse{
-		Token: &v2.Token{
+	return &pb.RegisterResponse{
+		Token: &pb.Token{
 			Token:        token,
 			RefreshToken: refreshToken,
 		},
 	}, nil
 }
 
-func (s *UserService) RefreshToken(ctx context.Context, req *v2.RefreshTokenRequest) (*v2.RefreshTokenResponse, error) {
+func (s *UserService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	claims, err := util.VerifyJWT(req.RefreshToken)
 	if err != nil {
 		return nil, err
@@ -116,8 +116,8 @@ func (s *UserService) RefreshToken(ctx context.Context, req *v2.RefreshTokenRequ
 	}
 	token, err := util.GenToken(usr, time.Duration(2)*time.Hour)
 	refreshToken, err := util.GenRefreshToken(usr, time.Duration(24)*time.Hour)
-	return &v2.RefreshTokenResponse{
-		Token: &v2.Token{
+	return &pb.RefreshTokenResponse{
+		Token: &pb.Token{
 			Token:        token,
 			RefreshToken: refreshToken,
 		},

@@ -52,13 +52,17 @@ func jwtAuthInterceptor(
 	return handler(ctx, req)
 }
 
-func NewGRPCServer(userService *service.UserService) *grpc.Server {
+func NewGRPCServer(cartService *service.CartService, itemService *service.ItemService, orderService *service.OrderService, paymentService *service.PaymentService, userService *service.UserService) *grpc.Server {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(jwtAuthInterceptor))
 
+	v1.RegisterCartServiceServer(grpcServer, cartService)
+	v1.RegisterItemServiceServer(grpcServer, itemService)
+	v1.RegisterOrderServiceServer(grpcServer, orderService)
+	v1.RegisterPaymentServiceServer(grpcServer, paymentService)
 	v1.RegisterUserServiceServer(grpcServer, userService)
 
 	go func() {

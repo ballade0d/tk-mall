@@ -9,8 +9,8 @@ type PasswordRepo struct {
 	data *Data
 }
 
-func NewPasswordRepo(data *Data) PasswordRepo {
-	return PasswordRepo{data: data}
+func NewPasswordRepo(data *Data) *PasswordRepo {
+	return &PasswordRepo{data: data}
 }
 
 func (r *PasswordRepo) CreatePassword(ctx context.Context, password string) (*ent.Password, error) {

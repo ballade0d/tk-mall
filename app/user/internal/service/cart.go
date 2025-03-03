@@ -2,22 +2,22 @@ package service
 
 import (
 	"context"
-	v2 "mall/api/mall/service/v1"
+	pb "mall/api/mall/service/v1"
 	"mall/app/user/internal/data"
 )
 
 type CartService struct {
-	v2.UnimplementedCartServiceServer
-	cartRepo data.CartRepo
+	pb.UnimplementedCartServiceServer
+	cartRepo *data.CartRepo
 }
 
-func NewCartService(cartRepo data.CartRepo) *CartService {
+func NewCartService(cartRepo *data.CartRepo) *CartService {
 	return &CartService{
 		cartRepo: cartRepo,
 	}
 }
 
-func (s *CartService) GetCart(ctx context.Context, req *v2.GetCartRequest) (*v2.GetCartResponse, error) {
+func (s *CartService) GetCart(ctx context.Context, req *pb.GetCartRequest) (*pb.GetCartResponse, error) {
 	c, err := s.cartRepo.GetCart(ctx)
 	if err != nil {
 		return nil, err
@@ -26,21 +26,21 @@ func (s *CartService) GetCart(ctx context.Context, req *v2.GetCartRequest) (*v2.
 	if err != nil {
 		return nil, err
 	}
-	cartItems := make([]*v2.CartItem, 0)
+	cartItems := make([]*pb.CartItem, 0)
 	for _, item := range items {
-		cartItems = append(cartItems, &v2.CartItem{
+		cartItems = append(cartItems, &pb.CartItem{
 			ItemId:   int64(item.ID),
 			Quantity: int64(item.Quantity),
 		})
 	}
-	return &v2.GetCartResponse{
-		Cart: &v2.Cart{
+	return &pb.GetCartResponse{
+		Cart: &pb.Cart{
 			Items: cartItems,
 		},
 	}, nil
 }
 
-func (s *CartService) AddToCart(ctx context.Context, req *v2.AddToCartRequest) (*v2.AddToCartResponse, error) {
+func (s *CartService) AddToCart(ctx context.Context, req *pb.AddToCartRequest) (*pb.AddToCartResponse, error) {
 	_, err := s.cartRepo.AddToCart(ctx, int(req.ItemId), int(req.Quantity))
 	if err != nil {
 		return nil, err
@@ -53,21 +53,21 @@ func (s *CartService) AddToCart(ctx context.Context, req *v2.AddToCartRequest) (
 	if err != nil {
 		return nil, err
 	}
-	cartItems := make([]*v2.CartItem, 0)
+	cartItems := make([]*pb.CartItem, 0)
 	for _, item := range items {
-		cartItems = append(cartItems, &v2.CartItem{
+		cartItems = append(cartItems, &pb.CartItem{
 			ItemId:   int64(item.ID),
 			Quantity: int64(item.Quantity),
 		})
 	}
-	return &v2.AddToCartResponse{
-		Cart: &v2.Cart{
+	return &pb.AddToCartResponse{
+		Cart: &pb.Cart{
 			Items: cartItems,
 		},
 	}, nil
 }
 
-func (s *CartService) RemoveFromCart(ctx context.Context, req *v2.RemoveFromCartRequest) (*v2.RemoveFromCartResponse, error) {
+func (s *CartService) RemoveFromCart(ctx context.Context, req *pb.RemoveFromCartRequest) (*pb.RemoveFromCartResponse, error) {
 	err := s.cartRepo.RemoveFromCart(ctx, int(req.ItemId))
 	if err != nil {
 		return nil, err
@@ -80,21 +80,21 @@ func (s *CartService) RemoveFromCart(ctx context.Context, req *v2.RemoveFromCart
 	if err != nil {
 		return nil, err
 	}
-	cartItems := make([]*v2.CartItem, 0)
+	cartItems := make([]*pb.CartItem, 0)
 	for _, item := range items {
-		cartItems = append(cartItems, &v2.CartItem{
+		cartItems = append(cartItems, &pb.CartItem{
 			ItemId:   int64(item.ID),
 			Quantity: int64(item.Quantity),
 		})
 	}
-	return &v2.RemoveFromCartResponse{
-		Cart: &v2.Cart{
+	return &pb.RemoveFromCartResponse{
+		Cart: &pb.Cart{
 			Items: cartItems,
 		},
 	}, nil
 }
 
-func (s *CartService) ClearCart(ctx context.Context, req *v2.ClearCartRequest) (*v2.ClearCartResponse, error) {
+func (s *CartService) ClearCart(ctx context.Context, req *pb.ClearCartRequest) (*pb.ClearCartResponse, error) {
 	err := s.cartRepo.ClearCart(ctx)
 	if err != nil {
 		return nil, err
@@ -107,15 +107,15 @@ func (s *CartService) ClearCart(ctx context.Context, req *v2.ClearCartRequest) (
 	if err != nil {
 		return nil, err
 	}
-	cartItems := make([]*v2.CartItem, 0)
+	cartItems := make([]*pb.CartItem, 0)
 	for _, item := range items {
-		cartItems = append(cartItems, &v2.CartItem{
+		cartItems = append(cartItems, &pb.CartItem{
 			ItemId:   int64(item.ID),
 			Quantity: int64(item.Quantity),
 		})
 	}
-	return &v2.ClearCartResponse{
-		Cart: &v2.Cart{
+	return &pb.ClearCartResponse{
+		Cart: &pb.Cart{
 			Items: cartItems,
 		},
 	}, nil

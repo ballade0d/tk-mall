@@ -14,8 +14,8 @@ type CartRepo struct {
 	data *Data
 }
 
-func NewCartRepo(data *Data) CartRepo {
-	return CartRepo{data: data}
+func NewCartRepo(data *Data) *CartRepo {
+	return &CartRepo{data: data}
 }
 
 func (r *CartRepo) GetCart(ctx context.Context) (*ent.Cart, error) {

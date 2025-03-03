@@ -10,8 +10,8 @@ type UserRepo struct {
 	data *Data
 }
 
-func NewUserRepo(data *Data) UserRepo {
-	return UserRepo{data: data}
+func NewUserRepo(data *Data) *UserRepo {
+	return &UserRepo{data: data}
 }
 
 func (r *UserRepo) FindUserByID(ctx context.Context, id int) (*ent.User, error) {
