@@ -15,7 +15,7 @@ import (
 	"mall/ent"
 )
 
-var ProviderSet = wire.NewSet(NewData, NewOrderRepo)
+var ProviderSet = wire.NewSet(NewData, NewItemRepo, NewOrderRepo)
 
 type Data struct {
 	conf *config.Config

@@ -11,6 +11,7 @@ import (
 type OrderService struct {
 	pb.UnimplementedOrderServiceServer
 	orderRepo *data.OrderRepo
+	itemRepo  *data.ItemRepo
 }
 
 func NewOrderService(orderRepo *data.OrderRepo) *OrderService {
@@ -21,6 +22,10 @@ func NewOrderService(orderRepo *data.OrderRepo) *OrderService {
 
 func (s *OrderService) CreateOrder(ctx context.Context, req *pb.CreateOrderRequest) (*pb.CreateOrderResponse, error) {
 	usr := ctx.Value("claims").(*util.Claims).UserId
+	err := s.itemRepo.CheckAndReduceStock(ctx, req.Items)
+	if err != nil {
+		return nil, err
+	}
 	o, err := s.orderRepo.CreateOrder(ctx, usr, req.Address, req.Items)
 	if err != nil {
 		return nil, err
@@ -37,7 +42,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *pb.CreateOrderReque
 			Quantity:  int64(item.Quantity),
 		})
 	}
-	// TODO: Lock item and reduce stock
 	return &pb.CreateOrderResponse{
 		Order: &pb.Order{
 			Id:      int64(o.ID),

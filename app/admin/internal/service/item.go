@@ -56,7 +56,6 @@ func (s *ItemService) EditItem(ctx context.Context, req *pb.EditItemRequest) (*p
 }
 
 func (s *ItemService) AddStock(ctx context.Context, req *pb.AddStockRequest) (*pb.AddStockResponse, error) {
-	// TODO: Lock item
 	item, err := s.itemRepo.AddStock(ctx, int(req.Id), int(req.Stock))
 	if err != nil {
 		return nil, err
